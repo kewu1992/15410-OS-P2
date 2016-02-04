@@ -8,3 +8,7 @@ bootfd.img
 410user/progs/init
 410user/progs/shell
 kernel.strip
+bootfd.gz
+user_apps.S
+temp
+
