@@ -93,7 +93,7 @@ UPDATE_METHOD = afs
 # A list of the test programs you want compiled in from the user/progs
 # directory
 #
-STUDENTTESTS = wk_test_print
+STUDENTTESTS = wk_test_print small_test
 
 ###########################################################################
 # Object files for your thread library
@@ -111,7 +111,7 @@ THREAD_OBJS = malloc.o panic.o
 ###########################################################################
 # Object files for your syscall wrappers
 ###########################################################################
-SYSCALL_OBJS = syscall.o print.o
+SYSCALL_OBJS = syscall.o print.o asm_set_status_stub.o asm_vanish_stub.o asm_yield_stub.o
 
 ###########################################################################
 # Object files for your automatic stack handling

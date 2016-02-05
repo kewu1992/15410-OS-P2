@@ -10,5 +10,8 @@ bootfd.img
 kernel.strip
 bootfd.gz
 user_apps.S
-temp
+temp/*
+kernel.log
+.md5s
+user/progs/small_test
 
