@@ -1,7 +1,7 @@
 
 #include <syscall_int.h>
 
-// int print(int size, char *buf)
+# int print(int size, char *buf)
 
 .global print
 
