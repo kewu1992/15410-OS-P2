@@ -6,7 +6,9 @@
 .global print
 
 print:
+    pushl   %esi
     movl    %esp, %esi
-    addl    $4, %esi
+    addl    $8, %esi
     int     $PRINT_INT
+    popl    %esi
     ret
