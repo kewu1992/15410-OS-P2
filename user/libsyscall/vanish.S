@@ -1,4 +1,4 @@
-/** @file asm_vanish_stub.S
+/** @file vanish.S
  *
  *  @brief Syscall stub for vanish
  *  

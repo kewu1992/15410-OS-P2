@@ -14,4 +14,5 @@ temp/*
 kernel.log
 .md5s
 user/progs/small_test
+user/progs/wk_test_print
 

@@ -1,4 +1,4 @@
-/** @file asm_set_status_stub.S
+/** @file set_status.S
  *
  *  @brief Syscall stub for set_status
  *  
@@ -17,7 +17,7 @@
 set_status:
 pushl %esi          # Save callee save registers that will be used here
 movl 8(%esp), %esi  # Place the only argument in %esi
-int $SET_STATUS_INT # Syscall of set_status
+int $SET_STATUS_INT # Do Syscal
 popl %esi           # Restore callee save registers
 ret                 # Return from stub
 
