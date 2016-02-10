@@ -10,15 +10,31 @@
 #include <syscall.h>
 #include <stdio.h>
 #include <simics.h>
+#include <mutex.h>
 
 int main()
 {
-    // Though I don't know what 2 is
-    set_status(2);
+    mutex_t mp; 
+    // Initiate first
+    mutex_init(&mp);
+    lprintf("mutex inited, lock_available: %d", mp.lock_available);
 
-    lprintf("Set status executes");
+    mutex_lock(&mp);
 
-    vanish();
+    lprintf("mutex locked, lock_available: %d", mp.lock_available);
+/*
+    lprintf("try lock again");
+
+    mutex_lock(&mp);
+    lprintf("Shouldn't reach here");
+    lprintf("mutex locked, lock_available: %d", mp.lock_available);
+*/
+
+    mutex_unlock(&mp);
+    lprintf("mutex unlocked");
+    lprintf("try lock again");
+    mutex_lock(&mp);
+    lprintf("Should reach here");
 
     return 0;
 }

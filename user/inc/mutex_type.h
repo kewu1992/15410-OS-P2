@@ -7,7 +7,7 @@
 
 
 typedef struct mutex {
-  /* fill this in */
+    int lock_available;
 } mutex_t;
 
 #endif /* _MUTEX_TYPE_H */
