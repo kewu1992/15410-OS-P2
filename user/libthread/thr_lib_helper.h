@@ -17,7 +17,7 @@
  */
 #define ALIGNMENT 4
 
-unsigned int get_new_stack_top(int count, 
+uint32_t get_new_stack_top(int count, 
         unsigned int stack_size);
 
 #endif
