@@ -1,39 +1,73 @@
+/** @file thr_lib.c
+ *  @brief This file contains implementation of thread management library 
+ */
+
+#include <stdlib.h>
+#include <stdint.h>
+#include <string.h>
+
 #include <thread.h>
 #include <mutex.h>
-#include "thr_lib_helper.h"
+#include <thr_lib_helper.h>
+#include <thr_internals.h>
 
-int thread_fork(unsigned int stack_top);
-// The amount of stack space available for each thread
+/** @brief The amount of stack space available for each thread */
 static unsigned int stack_size;
 
-// Number of threads created
+/** @brief Number of threads created */
 static unsigned int thread_count;
 
-// Mutex to guard when calculating new stack positions
+/** @brief Mutex to guard when calculating new stack positions */
 mutex_t mutex_thread_count;
 
-// Initialize the thread library
+/** @brief Initialize the thread library
+ *
+ *  @param size The amount of stack space which will be available for each 
+                thread using the thread library
+ *  @return On success return zero, on error return a negative number
+ */
 int thr_init(unsigned int size) {
 
     stack_size = size;
 
-    mutex_thread_count = 0;
+    // At first, already has a master thread
+    thread_count = 1;
+
+    mutex_init(&mutex_thread_count);
 
     int isError = 0;
 
     return isError == 1? -1 : 0;
 }
 
-// Create a new thread to run func
+/** @brief Creates a new thread to run func(args)
+ *  
+ *  This function will create a thread (a register set and a stack) to
+ *  run func(args). 
+ *
+ *  @param func The address of function for new thread to run
+ *  @param args The argument that passed to the function 
+ *              for new thread to run  
+ *  @return On success the thread ID of the new thread is returned, on error a 
+ *          negative number is returned
+ */
 int thr_create(void *(*func)(void *), void *args) {
     mutex_lock(&mutex_thread_count);
-    int tid = mutex_thread_count++;
+    int tid = thread_count++;
     mutex_unlock(&mutex_thread_count);
 
-    uint32_t new_stack = (uint32_t)get_stack_addr(tid);
-    memcpy((void*)(new_stack-4), args, 4);
+    // allocate a stack with stack_size for new thread
+    uint32_t new_stack;
+    if ((new_stack = (uint32_t)get_new_stack_top(tid, stack_size)) == -1)
+        return -1;
 
-    thr_create_kernel((void*)func, (void*)(new_stack-4));
+    // "push" argument to new stack  
+    memcpy((void*)(new_stack-4), &args, 4);
+
+    // create a new thread, tell it where it should start running (eip), and
+    // its stack address (esp)
+    if (thr_create_kernel(func, (void*)(new_stack-4)) < 0)
+        return -2;
 
     return tid;
 }

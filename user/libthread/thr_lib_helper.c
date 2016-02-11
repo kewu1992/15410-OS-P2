@@ -21,7 +21,7 @@ unsigned int get_root_thread_stack_low() {
  *  if necessary, and get a stack top that meets alignment requirement 
  *
  *  @param count The number of new threads has ever been created
- *  (root thread doesn't count)
+ *  (master thread is #0)
  *
  *  @param stack_size The max stack size for each new thread
  *
@@ -38,7 +38,7 @@ unsigned int get_new_stack_top(int count,
 
     // Once we create a new thread, the root thread's stack region is
     // fixed
-    if(count == 0) {
+    if(count == 1) {
         root_thread_stack_low = get_root_thread_stack_low();
     }
 

@@ -1,6 +1,5 @@
 #include <mutex.h>
-
-int asm_xchg(int *lock_available, int val);
+#include <thr_internals.h>
 
 int mutex_init(mutex_t *mp) {
     mp->lock_available = 1; 

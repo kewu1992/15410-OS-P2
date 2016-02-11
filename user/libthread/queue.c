@@ -1,4 +1,9 @@
-#include <stdilb.h>
+/** @file queue.c
+ *
+ *  @brief This file contains the implementation of a double-ended queue
+ */
+
+#include <stdlib.h>
 #include <queue.h>
 
 void queue_init(node_t* head, node_t* tail){
