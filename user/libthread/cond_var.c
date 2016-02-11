@@ -5,12 +5,12 @@
 
 int cond_init(cond_t *cv) {
     mutex_init(&cv->mutex);
-    queue_init(&cv->queue_head, &cv->queue_tail);
+    queue_init(&cv->deque);
 }
 
 void cond_destroy(cond_t *cv) {
     mutex_destroy(&cv->mutex);
-    if (queue_destroy(&cv->queue_head, &cv->queue_tail) < 0){
+    if (queue_destroy(&cv->deque) < 0){
         // illegal, some threads are blocked waiting on it
     }
 }
@@ -21,7 +21,7 @@ void cond_wait(cond_t *cv, mutex_t *mp) {
     node_t *tmp = malloc(sizeof(node_t));
     tmp->tid = thr_getid();
     tmp->reject = 0;
-    enqueue(&cv->queue_head, &cv->queue_tail, tmp);
+    enqueue(&cv->deque, tmp);
 
     mutex_unlock(mp);
 
@@ -33,7 +33,7 @@ void cond_wait(cond_t *cv, mutex_t *mp) {
 
 void cond_signal(cont_t* cv) {
     mutex_lock(&cv->mutex);
-    node_t *tmp = dequeue(&cv->queue_head, &cv->queue_tail);
+    node_t *tmp = dequeue(&cv->deque);
     if (tmp) {
         tmp->reject = 1;
         make_runnable(tmp->tid);
@@ -44,12 +44,12 @@ void cond_signal(cont_t* cv) {
 
 void cond_broadcast(cond_t *cv) {
     mutex_lock(&cv->mutex);
-    node_t *tmp = dequeue(&cv->queue_head, &cv->queue_tail);
+    node_t *tmp = dequeue(&cv->deque);
     while (tmp) {
         tmp->reject = 1;
         make_runnable(tmp->tid);
         free(tmp);
-        tmp = dequeue(&cv->queue_head, &cv->queue_tail);
+        tmp = dequeue(&cv->deque);
     }
     mutex_unlock(&cv->mutex);
 }

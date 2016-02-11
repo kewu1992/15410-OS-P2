@@ -11,7 +11,7 @@
 
 typedef struct cond {
     mutex_t mutex;
-    node_t queue_head, queue_tail;
+    deque_t deque;
 } cond_t;
 
 #endif /* _COND_TYPE_H */

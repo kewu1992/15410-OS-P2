@@ -6,31 +6,35 @@
 #include <stdlib.h>
 #include <queue.h>
 
-void queue_init(node_t* head, node_t* tail){
-    head->next = tail;
-    head->last = NULL;
-    tail->last = head;
-    tail->next = NULL;
+void queue_init(deque_t *deque){
+    deque->head = malloc(sizeof(node_t));
+    deque->tail = malloc(sizeof(node_t));
+    deque->head->next = deque->tail;
+    deque->head->prev = NULL;
+    deque->tail->prev = deque->head;
+    deque->tail->next = NULL;
 }
 
-void enqueue(node_t* head, node_t* tail, node_t* element) {
-    element->last = tail->last;
-    element->next = tail;
-    tail->last->next = element;
-    tail->last = element;
+void enqueue(deque_t *deque, node_t* element) {
+    element->prev = deque->tail->prev;
+    element->next = deque->tail;
+    deque->tail->prev->next = element;
+    deque->tail->prev = element;
 }
 
-node_t* dequeue(node_t* head, node_t* tail) {
-    if (head->next == tail)
+node_t* dequeue(deque_t *deque) {
+    if (deque->head->next == deque->tail)
         return NULL;
-    node_t* element = head->next;
-    head->next = head->next->next;
-    head->next->last = head;
+    node_t* element = deque->head->next;
+    deque->head->next = deque->head->next->next;
+    deque->head->next->prev = deque->head;
     return element;
 }
 
-int queue_destroy(node_t* head, node_t* tail) {
-    if (head->next != tail)
+int queue_destroy(deque_t *deque) {
+    if (deque->head->next != deque->tail)
         return -1;
+    free(deque->head);
+    free(deque->tail);
     return 0;
 }
