@@ -1,4 +1,5 @@
 #include <thread.h>
+#include <mutex.h>
 #include "thr_lib_helper.h"
 
 int thread_fork(unsigned int stack_top);
@@ -6,17 +7,17 @@ int thread_fork(unsigned int stack_top);
 static unsigned int stack_size;
 
 // Number of threads created
-static unsigned int count;
+static unsigned int thread_count;
 
 // Mutex to guard when calculating new stack positions
-
+mutex_t mutex_thread_count;
 
 // Initialize the thread library
 int thr_init(unsigned int size) {
 
     stack_size = size;
 
-    count = 0;
+    mutex_thread_count = 0;
 
     int isError = 0;
 
@@ -24,26 +25,16 @@ int thr_init(unsigned int size) {
 }
 
 // Create a new thread to run func
-int thr_create( void *(*func)(void *), void *args ) {
+int thr_create(void *(*func)(void *), void *args) {
+    mutex_lock(&mutex_thread_count);
+    int tid = mutex_thread_count++;
+    mutex_unlock(&mutex_thread_count);
 
-    // Should use mutex guard before assign stack positions
+    uint32_t new_stack = (uint32_t)get_stack_addr(tid);
+    memcpy((void*)(new_stack-4), args, 4);
 
-    int tid;
-    count++;
+    thr_create_kernel((void*)func, (void*)(new_stack-4));
 
-    unsigned int new_stack_top = get_new_stack_top(count, stack_size);
-
-    tid = thread_fork(new_stack_top);
-
-    // Inside original thread
-    if(tid < 0) {
-        lprintf("thread_fork return < 0 in thr_create"); 
-        return tid;
-    } else {
-        lprintf("old thread returns");
-        return 1;
-    }
-
+    return tid;
 }
-
 
