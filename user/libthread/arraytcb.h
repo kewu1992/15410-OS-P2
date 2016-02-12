@@ -23,7 +23,7 @@ int arraytcb_delete_thread(int tid);
 
 tcb_t* arraytcb_get_thread(int index);
 
-int arraytcb_find_thraed(int tid);
+int arraytcb_find_thread(int tid);
 
 void arraytcb_free();
 

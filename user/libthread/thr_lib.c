@@ -10,6 +10,7 @@
 
 #include <thread.h>
 #include <mutex.h>
+#include <cond.h>
 #include <thr_lib_helper.h>
 #include <thr_internals.h>
 #include <arraytcb.h>
@@ -48,6 +49,8 @@ int thr_init(unsigned int size) {
 
     isError |= arraytcb_init(INIT_THR_NUM);
 
+    isError |= thr_lib_helper_init(stack_size);
+
     return isError ? -1 : 0;
 }
 
@@ -69,7 +72,7 @@ int thr_create(void *(*func)(void *), void *args) {
 
     // allocate a stack with stack_size for new thread
     uint32_t new_stack;
-    if ((new_stack = (uint32_t)get_new_stack_top(tid, stack_size)) == -1)
+    if ((new_stack = (uint32_t)get_new_stack_top(tid)) == -1)
         return -1;
 
     // "push" argument to new stack  
@@ -94,7 +97,7 @@ int thr_join(int tid, void **statusp) {
     mutex_unlock(&mutex_thread_count);
     
     mutex_lock(&mutex_arraytcb);
-    int index = arraytcb_find_thraed(tid);
+    int index = arraytcb_find_thread(tid);
     if (index >= 0) {
         tcb_t* thr = arraytcb_get_thread(index);
         switch(thr->state){
@@ -128,8 +131,66 @@ int thr_join(int tid, void **statusp) {
     }
 }
 
+void thr_exit(void *status) {
+    
+    // Get current thread tid
+    int tid = thr_getid();
+
+    // Find current thread's stack position index
+    int index = arraytcb_find_thread(tid);
+    if(index == -1) {
+        // Something's wrong
+        return;
+    }
+    // Get the tcb of tid
+    tcb_t *tcb = arraytcb_get_thread(index);
+    if(tcb == NULL) {
+        // Something's wrong
+        return;
+    }
+
+    // Get stack high of current thread
+    uint32_t cur_stack_high = get_stack_high(index);
+    lprintf("cur_stack_hign: %u", (unsigned)cur_stack_high);
+
+    // Exit, TBD
+
+    /*
+    // Push status on current stack high to let it be collected by a
+    // thread who joins this thread
+    memcpy((void*)(cur_stack_high - sizeof(void *)), &status, 
+            sizeof(void *));
+    
+    // Check if current thread is in the process of being joined
+    tcb_t* tcb = arraytcb_get_thread(tid);
+    if(tcb->state == JOINED) {
+        // Signal the thread who called join
+
+    } else {
+        // Mark current thread as ZOMBIE
+        tcb->state = ZOMBIE;
+    }
+
+    // Deschedule current thread
+    
+   */ 
+
+}
 
 int thr_getid() {
+
+    // Get stack position index of the current thread
+    int index = get_stack_position_index();
+    
+    tcb_t *tcb = arraytcb_get_thread(index);
+    if(tcb == NULL) {
+        // Something's wrong, debug
+        lprintf("getid fails");
+        return -1;
+    }
+
+    return tcb->tid;
+
     return 0;
 }
 

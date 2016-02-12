@@ -17,8 +17,16 @@
  */
 #define ALIGNMENT 4
 
-uint32_t get_new_stack_top(int count, 
-        unsigned int stack_size);
+
+int thr_lib_helper_init(unsigned int size);
+
+uint32_t get_new_stack_top(int count);
+
+uint32_t get_stack_high(int index);
+
+int get_stack_position_index();
+
+uint32_t asm_get_esp();
 
 #endif
 

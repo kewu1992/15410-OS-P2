@@ -71,7 +71,7 @@ tcb_t* arraytcb_get_thread(int index) {
         return array->data[index];
 }
 
-int arraytcb_find_thraed(int tid) {
+int arraytcb_find_thread(int tid) {
     int i;
     for (i = 0; i < array->cursize; i++)
        if (array->data[i] && array->data[i]->tid == tid)

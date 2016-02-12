@@ -6,6 +6,14 @@
  */
 static uint32_t root_thread_stack_low;
 
+/**
+ * @brief Root thread stack high
+ */
+static uint32_t root_thread_stack_high;
+
+/** @brief The amount of stack space available for each thread */
+static unsigned int stack_size;
+
 /** @brief Get current root thread stack low
  *  
  *  @return Current root thread stack low
@@ -16,6 +24,26 @@ uint32_t get_root_thread_stack_low() {
     return 0xffffe000;
 }
 
+/** @brief Get current root thread stack high
+ *  
+ *  @return Current root thread stack high
+ *  @bug Will eventually put this call in libautostack
+ */
+uint32_t get_root_thread_stack_high() {
+    
+    return 0xffffffff;
+}
+
+int thr_lib_helper_init(unsigned int size) {
+
+    stack_size = size;
+
+    // root thread stack high is deterministic
+    root_thread_stack_high = get_root_thread_stack_high();
+
+    return 0;
+}
+
 /** @brief Get stack top for a new thread
  *  
  *  Compute the stack region for a new thread, allocate new pages
@@ -23,8 +51,6 @@ uint32_t get_root_thread_stack_low() {
  *
  *  @param count The number of new threads has ever been created
  *  (master thread is #0)
- *
- *  @param stack_size The max stack size for each new thread
  *
  *  @return Stack top for a new thread
  *
@@ -34,8 +60,7 @@ uint32_t get_root_thread_stack_low() {
  *  collection.
  *
  */
-uint32_t get_new_stack_top(int count, 
-        unsigned int stack_size) {
+uint32_t get_new_stack_top(int count) {
 
     // Once we create a new thread, the root thread's stack region is
     // fixed
@@ -74,5 +99,47 @@ uint32_t get_new_stack_top(int count,
     }
 
     return new_stack_top;
+}
+
+/** @brief Get stack high given stack position index 
+ *  
+ *  @param index Stack position index
+ *
+ *  @return Stack high of a stack position index
+ *  @bug Should check if root_thread_stack_low has been initialized
+ *  Will address it shortly
+ */
+uint32_t get_stack_high(int index) {
+
+    if(index == 0) {
+         return root_thread_stack_high;
+    }
+
+    uint32_t cur_stack_high = root_thread_stack_low - 
+        (index - 1) * stack_size - 1;
+    while(cur_stack_high % ALIGNMENT != 0) {
+        cur_stack_high--;
+    }
+
+    return cur_stack_high;
+}
+
+/** @brief Get stack position index of the current thread 
+ *  
+ *
+ *  @return Stack position index of the current thread
+ */
+int get_stack_position_index() {
+    
+    uint32_t esp = asm_get_esp();
+
+    if(esp <= root_thread_stack_high && esp >= root_thread_stack_low) {
+        return 0;
+    } else {
+        // divide by stack_size + 1 so that all esp within a stack region 
+        // maps to the same number
+        return 1 + (root_thread_stack_low - esp)/(stack_size + 1);
+    }
+
 }
 
