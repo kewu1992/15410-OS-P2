@@ -10,6 +10,9 @@
 #include <mutex.h>
 #include <thr_lib_helper.h>
 #include <thr_internals.h>
+#include <arraytcb.h>
+
+#define INIT_THR_NUM 32
 
 /** @brief The amount of stack space available for each thread */
 static unsigned int stack_size;
@@ -33,11 +36,13 @@ int thr_init(unsigned int size) {
     // At first, already has a master thread
     thread_count = 1;
 
-    mutex_init(&mutex_thread_count);
-
     int isError = 0;
 
-    return isError == 1? -1 : 0;
+    isError |= mutex_init(&mutex_thread_count);
+
+    isError |= arraytcb_init(INIT_THR_NUM);
+
+    return isError ? -1 : 0;
 }
 
 /** @brief Creates a new thread to run func(args)
@@ -70,5 +75,31 @@ int thr_create(void *(*func)(void *), void *args) {
         return -2;
 
     return tid;
+}
+
+/*
+int thr_join(int tid, void **statusp) {
+    // tid was not created 
+    if (tid > thread_count)
+        return -1;
+    
+    int index = arraylist_find(array, tid);
+    if (index >= 0) {
+        // tid has not exited
+
+        
+    } else {
+        // tid may has exited, try to find -tid
+        index = arraylist_find(array, -tid);
+        // tid can not be found, tid has already been cleaned up
+        if (index < 0)
+            return -2;
+
+    }
+}
+*/
+
+int thr_getid() {
+    return 0;
 }
 
