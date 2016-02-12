@@ -51,6 +51,9 @@ int thr_init(unsigned int size) {
 
     isError |= thr_lib_helper_init(stack_size);
 
+    // insert master thread to arraytcb
+    arraytcb_insert_thread(0);
+
     return isError ? -1 : 0;
 }
 
@@ -116,6 +119,8 @@ int thr_join(int tid, void **statusp) {
 
             if (statusp) {
                 // get exit status
+                uint32_t cur_stack_high = get_stack_high(index);
+                *statusp = *((void**)(cur_stack_high - sizeof(void*)));
             }
 
             // release resource
