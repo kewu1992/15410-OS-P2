@@ -53,6 +53,9 @@ int thr_init(unsigned int size) {
 
     isError |= thr_lib_helper_init(stack_size);
 
+    // insert master thread to arraytcb
+    arraytcb_insert_thread(0);
+
     return isError ? -1 : 0;
 }
 
@@ -103,25 +106,27 @@ int thr_join(int tid, void **statusp) {
     if (index >= 0) {
         tcb_t* thr = arraytcb_get_thread(index);
         switch(thr->state){
-            case JOINED:
-                // tid has been joined by other thread
-                mutex_unlock(&mutex_arraytcb);
-                return -2;
-            case RUNNING:
-                // tid is still running, block and waiting for it
-                thr->state = JOINED;
-                cond_wait(&thr->cond_var, &mutex_arraytcb);
-                // after returning from cond_wait(), tid becoms ZOMBIE,
-                // fall through ZOMBIE case
-            case ZOMBIE:
-                // tid has exitted
+        case JOINED:
+            // tid has been joined by other thread
+            mutex_unlock(&mutex_arraytcb);
+            return -2;
+        case RUNNING:
+            // tid is still running, block and waiting for it
+            thr->state = JOINED;
+            cond_wait(&thr->cond_var, &mutex_arraytcb);
+            // after returning from cond_wait(), tid becoms ZOMBIE,
+            // fall through ZOMBIE case
+        case ZOMBIE:
+            // tid has exitted
 
-                if (statusp) {
-                    // get exit status
-                }
+            if (statusp) {
+                // get exit status
+                uint32_t cur_stack_high = get_stack_high(index);
+                *statusp = *((void**)(cur_stack_high - sizeof(void*)));
+            }
 
-                // release resource
-                arraytcb_delete_thread(tid);
+            // release resource
+            arraytcb_delete_thread(tid);
         } 
 
         mutex_unlock(&mutex_arraytcb);

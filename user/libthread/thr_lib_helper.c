@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <thr_lib_helper.h>
+#include <arraytcb.h>
 
 /**
  * @brief Root thread stack low
@@ -66,6 +67,11 @@ uint32_t get_new_stack_top(int count) {
     // fixed
     if(count == 1) {
         root_thread_stack_low = get_root_thread_stack_low();
+    }
+
+    if (!arraytcb_insert_thread(count)) {
+        int index = arraytcb_find_thread(count);
+        return get_stack_high(index);
     }
 
     // Assume pages on the stack grow down continuouly
