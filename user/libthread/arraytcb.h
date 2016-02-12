@@ -5,7 +5,7 @@
 
 typedef enum {
     RUNNING,
-    BLOCK,
+    JOINED,
     ZOMBIE
 } thr_state_t;
 

@@ -1,5 +1,7 @@
 /** @file thr_lib.c
  *  @brief This file contains implementation of thread management library 
+ *
+*  @bug Better use spin lock for mutex_thread_count
  */
 
 #include <stdlib.h>
@@ -23,6 +25,8 @@ static unsigned int thread_count;
 /** @brief Mutex to guard when calculating new stack positions */
 mutex_t mutex_thread_count;
 
+mutex_t mutex_arraytcb;
+
 /** @brief Initialize the thread library
  *
  *  @param size The amount of stack space which will be available for each 
@@ -39,6 +43,8 @@ int thr_init(unsigned int size) {
     int isError = 0;
 
     isError |= mutex_init(&mutex_thread_count);
+
+    isError |= mutex_init(&mutex_arraytcb);
 
     isError |= arraytcb_init(INIT_THR_NUM);
 
@@ -77,27 +83,51 @@ int thr_create(void *(*func)(void *), void *args) {
     return tid;
 }
 
-/*
+
 int thr_join(int tid, void **statusp) {
-    // tid was not created 
-    if (tid > thread_count)
+    // check if tid has been created 
+    mutex_lock(&mutex_thread_count);
+    if (tid >= thread_count){
+        mutex_unlock(&mutex_thread_count);
         return -1;
+    }
+    mutex_unlock(&mutex_thread_count);
     
-    int index = arraylist_find(array, tid);
+    mutex_lock(&mutex_arraytcb);
+    int index = arraytcb_find_thraed(tid);
     if (index >= 0) {
-        // tid has not exited
-
-        
-    } else {
-        // tid may has exited, try to find -tid
-        index = arraylist_find(array, -tid);
-        // tid can not be found, tid has already been cleaned up
-        if (index < 0)
+        tcb_t* thr = arraytcb_get_thread(index);
+        switch(thr->state){
+        case JOINED:
+            // tid has been joined by other thread
+            mutex_unlock(&mutex_arraytcb);
             return -2;
+        case RUNNING:
+            // tid is still running, block and waiting for it
+            thr->state = JOINED;
+            cond_wait(&thr->cond_var, &mutex_arraytcb);
+            // after returning from cond_wait(), tid becoms ZOMBIE,
+            // fall through ZOMBIE case
+        case ZOMBIE:
+            // tid has exitted
 
+            if (statusp) {
+                // get exit status
+            }
+
+            // release resource
+            arraytcb_delete_thread(tid);
+        } 
+
+        mutex_unlock(&mutex_arraytcb);
+        return 0;
+    } else {
+        // tid can not be found, tid has already been cleaned up
+        mutex_unlock(&mutex_arraytcb);
+        return -2;
     }
 }
-*/
+
 
 int thr_getid() {
     return 0;
