@@ -1,7 +1,7 @@
 /** @file thr_lib.c
  *  @brief This file contains implementation of thread management library 
  *
-*  @bug Better use spin lock for mutex_thread_count
+ *  @bug Better use spin lock for mutex_thread_count
  */
 
 #include <stdlib.h>
@@ -31,7 +31,7 @@ mutex_t mutex_arraytcb;
 /** @brief Initialize the thread library
  *
  *  @param size The amount of stack space which will be available for each 
-                thread using the thread library
+ thread using the thread library
  *  @return On success return zero, on error return a negative number
  */
 int thr_init(unsigned int size) {
@@ -44,6 +44,8 @@ int thr_init(unsigned int size) {
     int isError = 0;
 
     isError |= mutex_init(&mutex_thread_count);
+
+    isError |= malloc_init();
 
     isError |= mutex_init(&mutex_arraytcb);
 
@@ -95,31 +97,31 @@ int thr_join(int tid, void **statusp) {
         return -1;
     }
     mutex_unlock(&mutex_thread_count);
-    
+
     mutex_lock(&mutex_arraytcb);
     int index = arraytcb_find_thread(tid);
     if (index >= 0) {
         tcb_t* thr = arraytcb_get_thread(index);
         switch(thr->state){
-        case JOINED:
-            // tid has been joined by other thread
-            mutex_unlock(&mutex_arraytcb);
-            return -2;
-        case RUNNING:
-            // tid is still running, block and waiting for it
-            thr->state = JOINED;
-            cond_wait(&thr->cond_var, &mutex_arraytcb);
-            // after returning from cond_wait(), tid becoms ZOMBIE,
-            // fall through ZOMBIE case
-        case ZOMBIE:
-            // tid has exitted
+            case JOINED:
+                // tid has been joined by other thread
+                mutex_unlock(&mutex_arraytcb);
+                return -2;
+            case RUNNING:
+                // tid is still running, block and waiting for it
+                thr->state = JOINED;
+                cond_wait(&thr->cond_var, &mutex_arraytcb);
+                // after returning from cond_wait(), tid becoms ZOMBIE,
+                // fall through ZOMBIE case
+            case ZOMBIE:
+                // tid has exitted
 
-            if (statusp) {
-                // get exit status
-            }
+                if (statusp) {
+                    // get exit status
+                }
 
-            // release resource
-            arraytcb_delete_thread(tid);
+                // release resource
+                arraytcb_delete_thread(tid);
         } 
 
         mutex_unlock(&mutex_arraytcb);
@@ -132,10 +134,13 @@ int thr_join(int tid, void **statusp) {
 }
 
 void thr_exit(void *status) {
-    
+
     // Get current thread tid
     int tid = thr_getid();
 
+    // When thr_create is called at this point
+    // should be fine ... 
+    mutex_lock(&mutex_arraytcb);
     // Find current thread's stack position index
     int index = arraytcb_find_thread(tid);
     if(index == -1) {
@@ -143,45 +148,49 @@ void thr_exit(void *status) {
         return;
     }
     // Get the tcb of tid
-    tcb_t *tcb = arraytcb_get_thread(index);
-    if(tcb == NULL) {
+    tcb_t *thr = arraytcb_get_thread(index);
+    if(thr == NULL) {
         // Something's wrong
         return;
     }
 
+    if(thr->state == ZOMBIE) {
+        // This thread has exited before, should never happen
+        lprintf("Thread has called thr_exit() before, something's wrong");
+        return;
+    }
+
+    // Thread is either running or someone has called join on it
     // Get stack high of current thread
     uint32_t cur_stack_high = get_stack_high(index);
     lprintf("cur_stack_hign: %u", (unsigned)cur_stack_high);
 
-    // Exit, TBD
-
-    /*
     // Push status on current stack high to let it be collected by a
     // thread who joins this thread
     memcpy((void*)(cur_stack_high - sizeof(void *)), &status, 
             sizeof(void *));
-    
-    // Check if current thread is in the process of being joined
-    tcb_t* tcb = arraytcb_get_thread(tid);
-    if(tcb->state == JOINED) {
-        // Signal the thread who called join
 
-    } else {
+    if(thr->state == RUNNING) {
         // Mark current thread as ZOMBIE
-        tcb->state = ZOMBIE;
+        thr->state = ZOMBIE;
+    } else if(thr->state == JOINED) {
+        // Signal the thread who called join
+        cond_signal(&thr->cond_var);
     }
 
-    // Deschedule current thread
-    
-   */ 
+    mutex_unlock(&mutex_arraytcb);
+    vanish();
+    return;
 
 }
 
 int thr_getid() {
 
+    mutex_lock(&mutex_arraytcb);
+
     // Get stack position index of the current thread
     int index = get_stack_position_index();
-    
+
     tcb_t *tcb = arraytcb_get_thread(index);
     if(tcb == NULL) {
         // Something's wrong, debug
@@ -189,8 +198,7 @@ int thr_getid() {
         return -1;
     }
 
+    mutex_unlock(&mutex_arraytcb);
     return tcb->tid;
-
-    return 0;
 }
 
