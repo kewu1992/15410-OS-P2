@@ -32,7 +32,12 @@ uint32_t get_root_thread_stack_low() {
  */
 uint32_t get_root_thread_stack_high() {
     
-    return 0xffffffff;
+    uint32_t stack_high = 0xffffffff;
+    while(stack_high % ALIGNMENT != 0) {
+        stack_high--;
+    }
+
+    return stack_high;
 }
 
 int thr_lib_helper_init(unsigned int size) {

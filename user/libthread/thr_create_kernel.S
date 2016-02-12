@@ -12,6 +12,7 @@ thr_create_kernel:
   .L2:              
     movl    %edx, %esp      # set esp to new stack
     call    %ecx            # call func
-
+    pushl   %eax            # push func's return value as the new param
+    call    thr_exit        # call thr_exit if func doesn't call itself
 
     

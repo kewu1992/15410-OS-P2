@@ -191,7 +191,7 @@ void thr_exit(void *status) {
 
 int thr_getid() {
 
-    mutex_lock(&mutex_arraytcb);
+    // mutex_lock(&mutex_arraytcb);
 
     // Get stack position index of the current thread
     int index = get_stack_position_index();
@@ -200,10 +200,11 @@ int thr_getid() {
     if(tcb == NULL) {
         // Something's wrong, debug
         lprintf("getid fails");
+        // mutex_unlock(&mutex_arraytcb);
         return -1;
     }
 
-    mutex_unlock(&mutex_arraytcb);
+    // mutex_unlock(&mutex_arraytcb);
     return tcb->tid;
 }
 
