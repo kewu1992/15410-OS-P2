@@ -22,6 +22,7 @@ void cond_wait(cond_t *cv, mutex_t *mp) {
     mutex_lock(&cv->mutex);
 
     node_t *tmp = malloc(sizeof(node_t));
+    tmp->ktid = gettid();
     tmp->tid = thr_getid();
     tmp->reject = 0;
     enqueue(&cv->deque, tmp);
@@ -39,7 +40,7 @@ void cond_signal(cond_t *cv) {
     node_t *tmp = dequeue(&cv->deque);
     if (tmp) {
         tmp->reject = 1;
-        make_runnable(tmp->tid);
+        make_runnable(tmp->ktid);
         free(tmp);
     }
     mutex_unlock(&cv->mutex);
@@ -50,7 +51,7 @@ void cond_broadcast(cond_t *cv) {
     node_t *tmp = dequeue(&cv->deque);
     while (tmp) {
         tmp->reject = 1;
-        make_runnable(tmp->tid);
+        make_runnable(tmp->ktid);
         free(tmp);
         tmp = dequeue(&cv->deque);
     }

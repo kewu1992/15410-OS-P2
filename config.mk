@@ -85,7 +85,7 @@ UPDATE_METHOD = afs
 # A list of the test programs you want compiled in from the 410user/progs
 # directory
 #
-410TESTS = startle
+410TESTS = startle thr_exit_join
 
 ###########################################################################
 # Test programs you have written which you wish to run

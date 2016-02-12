@@ -2,6 +2,7 @@
 #define _QUEUE_H_
 
 typedef struct node{
+    int ktid;
     int tid;
     int reject;
     struct node *next;

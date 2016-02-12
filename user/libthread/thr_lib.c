@@ -184,7 +184,9 @@ void thr_exit(void *status) {
     }
 
     mutex_unlock(&mutex_arraytcb);
+    lprintf("About to call vanish");
     vanish();
+    lprintf("Should never reach here");
     return;
 
 }
