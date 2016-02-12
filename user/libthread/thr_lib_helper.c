@@ -74,11 +74,6 @@ uint32_t get_new_stack_top(int count) {
         root_thread_stack_low = get_root_thread_stack_low();
     }
 
-    if (!arraytcb_insert_thread(count)) {
-        int index = arraytcb_find_thread(count);
-        return get_stack_high(index);
-    }
-
     // Assume pages on the stack grow down continuouly
     uint32_t new_page_base = (root_thread_stack_low - 
             count * stack_size) & PAGE_ALIGN_MASK;

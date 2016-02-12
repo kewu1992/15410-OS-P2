@@ -75,9 +75,19 @@ int thr_create(void *(*func)(void *), void *args) {
     int tid = thread_count++;
     mutex_unlock(&mutex_thread_count);
 
+    uint32_t new_stack = 0;
+    int index;
+
+    mutex_lock(&mutex_arraytcb);
+    if (!arraytcb_insert_thread(tid)) {
+        index = arraytcb_find_thread(tid);
+        new_stack = get_stack_high(index);
+    } else 
+        index = arraytcb_find_thread(tid);
+    mutex_unlock(&mutex_arraytcb);
+
     // allocate a stack with stack_size for new thread
-    uint32_t new_stack;
-    if ((new_stack = (uint32_t)get_new_stack_top(tid)) == -1)
+    if (!new_stack && (new_stack = (uint32_t)get_new_stack_top(index)) == -1)
         return -1;
 
     // "push" argument to new stack  
