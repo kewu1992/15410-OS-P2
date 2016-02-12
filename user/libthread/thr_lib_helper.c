@@ -86,19 +86,39 @@ uint32_t get_new_stack_top(int count) {
     uint32_t old_page_base = (root_thread_stack_low - 
             (count - 1) * stack_size) & PAGE_ALIGN_MASK;
 
-    // Allocate if previously allocated pages are not enough
-    if(new_page_base != old_page_base) {
-        lprintf("new_page_base: %x", (unsigned int)new_page_base);
-        if(new_pages((void *)new_page_base, 
-                    old_page_base - new_page_base) != 0) {
-            lprintf("new_pages fail");
-            // Should return other error code though
-            return -1;
-        } else {
-            lprintf("new_pages succeed");
-        }
-    } else {
-        lprintf("No new page required");
+    lprintf("old_page_base: %x", (unsigned)old_page_base);
+    lprintf("new_page_base: %x", (unsigned)new_page_base);
+
+    // Depending on how kernel schedules, a thread that's created later may
+    // call this function earlier than one that's created earlier
+    int num_pages = (old_page_base - new_page_base)/PAGE_SIZE;
+
+    lprintf("num_pages: %d", num_pages);
+
+    // Allocate highest page of this stack region, fail is normal since this 
+    // page may have been already been allocated 
+    if(new_pages((void *)old_page_base, PAGE_SIZE) != 0) {
+            // Should check return value
+            // New pages failed, the page may have been already allocated
+    } 
+
+    if(num_pages > 1) {
+        // Allocate middle pages, shouldn't fail since middle pages of this
+        // stack region don't overlap with other threads' stack regions
+        if(new_pages((void *)(new_page_base + PAGE_SIZE), 
+                    (num_pages - 1) * PAGE_SIZE) != 0) {
+            lprintf("New page failed, something's wrong");
+            return 3;
+        }    
+    }
+
+    if(old_page_base != new_page_base) {
+        // Allocate lowest page, fail is normal since the page may have
+        // already been allocated
+        if(new_pages((void *)new_page_base, PAGE_SIZE) != 0) {
+                // Should check return value
+                // New pages failed, the page may have been already allocated
+        } 
     }
 
     // The 1st available new stack position is last thread's stack low - 1
