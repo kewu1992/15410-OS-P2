@@ -68,7 +68,7 @@ static void double_array() {
  *          means alloate a new stack slot for the new thread. 
  *
  */
-int arraytcb_insert_thread(unsigned int tid) {
+int arraytcb_insert_thread(int tid) {
     tcb_t* new_thread = malloc(sizeof(tcb_t));
     new_thread->tid = tid;
     new_thread->state = RUNNING;
@@ -138,6 +138,15 @@ int arraytcb_find_thread(int tid) {
        if (array->data[i] && array->data[i]->tid == tid)
             return i;
     return -1; 
+}
+
+int arraytcb_set_ktid(int index, int ktid) {
+    if (index >= array->cursize || !array->data[index])
+        return -1;
+
+    array->data[index]->ktid = ktid;
+    
+    return 0;
 }
 
 /** @brief Free arraytcb data structure, release resource

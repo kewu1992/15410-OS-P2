@@ -4,6 +4,7 @@
 #include <cond_type.h>
 #include <stdlib.h>
 #include <queue.h>
+#include <thr_internals.h>
 
 int cond_init(cond_t *cv) {
     mutex_init(&cv->mutex);
@@ -19,12 +20,12 @@ void cond_destroy(cond_t *cv) {
 }
 
 void cond_wait(cond_t *cv, mutex_t *mp) {
+    node_t *tmp = malloc(sizeof(node_t));
+    tmp->ktid = thr_getktid();
+    tmp->reject = 0;
+
     mutex_lock(&cv->mutex);
 
-    node_t *tmp = malloc(sizeof(node_t));
-    tmp->ktid = gettid();
-    tmp->tid = thr_getid();
-    tmp->reject = 0;
     enqueue(&cv->deque, tmp);
 
     mutex_unlock(mp);

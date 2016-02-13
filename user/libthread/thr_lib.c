@@ -95,9 +95,11 @@ int thr_create(void *(*func)(void *), void *args) {
 
     // create a new thread, tell it where it should start running (eip), and
     // its stack address (esp)
-    int child_tid;
-    if ((child_tid = thr_create_kernel(func, (void*)(new_stack-4))) < 0)
+    int child_ktid;
+    if ((child_ktid = thr_create_kernel(func, (void*)(new_stack-4))) < 0)
         return -2;
+
+    arraytcb_set_ktid(index, child_ktid);
 
     //lprintf("tid: %d(%d), stack index: %d, stack addr: %x - %x", tid, child_tid, index, (unsigned int)(new_stack), (unsigned int)(new_stack - stack_size + 1));
 
@@ -156,33 +158,15 @@ int thr_join(int tid, void **statusp) {
 
 void thr_exit(void *status) {
 
-    // Get current thread tid
-    int tid = thr_getid();
-    //lprintf("thraed %d(%d), ready to be killed at addr %x", tid, gettid(), (unsigned int)asm_get_esp());
-
-    // When thr_create is called at this point
-    // should be fine ... 
-    mutex_lock(&mutex_arraytcb);
     // Find current thread's stack position index
-    int index = arraytcb_find_thread(tid);
-    if(index == -1) {
-        // Something's wrong
-        return;
-    }
-    // Get the tcb of tid
+    int index = get_stack_position_index();
+
     tcb_t *thr = arraytcb_get_thread(index);
     if(thr == NULL) {
         // Something's wrong
         return;
     }
 
-    if(thr->state == ZOMBIE) {
-        // This thread has exited before, should never happen
-        lprintf("Thread %d(%d) at addr %x has called thr_exit() before, something's wrong", thr->tid, gettid(), (unsigned int)asm_get_esp());
-        return;
-    }
-
-    // Thread is either running or someone has called join on it
     // Get stack high of current thread
     uint32_t cur_stack_high = get_stack_high(index);
     //lprintf("cur_stack_hign: %u", (unsigned)cur_stack_high);
@@ -192,6 +176,9 @@ void thr_exit(void *status) {
     memcpy((void*)(cur_stack_high - sizeof(void *)), &status, 
             sizeof(void *));
 
+    mutex_lock(&mutex_arraytcb);
+
+    // Thread is either running or someone has called join on it
     if(thr->state == RUNNING) {
         // Mark current thread as ZOMBIE
         thr->state = ZOMBIE;
@@ -199,10 +186,16 @@ void thr_exit(void *status) {
     } else if(thr->state == JOINED) {
         // Signal the thread who called join
         cond_signal(&thr->cond_var);
+    } else if(thr->state == ZOMBIE) {
+        // This thread has exited before, should never happen
+        lprintf("Thread %d(%d) at addr %x has called thr_exit() before, something's wrong", thr->tid, gettid(), (unsigned int)asm_get_esp());
+        return;
     }
 
     mutex_unlock(&mutex_arraytcb);
+
     vanish();
+
     lprintf("should never reach here");
     return;
 
@@ -219,11 +212,48 @@ int thr_getid() {
     if(tcb == NULL) {
         // Something's wrong, debug
         lprintf("getid fails");
-        mutex_unlock(&mutex_arraytcb);
+        //mutex_unlock(&mutex_arraytcb);
         return -1;
     }
 
     //mutex_unlock(&mutex_arraytcb);
     return tcb->tid;
+}
+
+int thr_getktid() {
+    // Get stack position index of the current thread
+    int index = get_stack_position_index();
+
+    tcb_t *tcb = arraytcb_get_thread(index);
+    if(tcb == NULL) {
+        // Something's wrong, debug
+        lprintf("gektid fails");
+        return -1;
+    }
+
+    return tcb->ktid;
+}
+
+int thr_yield(int tid) {
+    
+    if (tid == -1)
+        return yield(-1);
+
+    mutex_lock(&mutex_arraytcb);
+    int index = arraytcb_find_thread(tid);
+    
+
+    if (index < 0){
+        // tid doesn't exist
+        mutex_unlock(&mutex_arraytcb);
+        return -1;
+    }
+
+    tcb_t *tcb = arraytcb_get_thread(index);
+    int ktid = tcb->ktid;
+    mutex_unlock(&mutex_arraytcb);
+
+    return yield(ktid);
+
 }
 
