@@ -55,6 +55,8 @@ int thr_init(unsigned int size) {
 
     // insert master thread to arraytcb
     arraytcb_insert_thread(0);
+    // set ktid for master thread
+    arraytcb_set_ktid(0, gettid());
 
     return isError ? -1 : 0;
 }
@@ -128,7 +130,7 @@ int thr_join(int tid, void **statusp) {
         case RUNNING:
             // tid is still running, block and waiting for it
             thr->state = JOINED;
-            //lprintf("tid %d ---> JOINED", thr->tid);
+            //lprintf("tid %d(%d) ---> JOINED", thr->tid, thr->ktid);
             cond_wait(&thr->cond_var, &mutex_arraytcb);
             // after returning from cond_wait(), tid becoms ZOMBIE,
             // fall through ZOMBIE case
@@ -167,6 +169,9 @@ void thr_exit(void *status) {
         return;
     }
 
+    //lprintf("thread %d(%d) start exiting", thr->tid, thr->ktid);
+
+
     // Get stack high of current thread
     uint32_t cur_stack_high = get_stack_high(index);
     //lprintf("cur_stack_hign: %u", (unsigned)cur_stack_high);
@@ -182,9 +187,10 @@ void thr_exit(void *status) {
     if(thr->state == RUNNING) {
         // Mark current thread as ZOMBIE
         thr->state = ZOMBIE;
-        //lprintf("tid %d ---> ZOMBIE", thr->tid);
+        // lprintf("thread %d(%d) becomes zombie", thr->tid, thr->ktid);
     } else if(thr->state == JOINED) {
         // Signal the thread who called join
+        // lprintf("thread %d(%d) cond_signal", thr->tid, thr->ktid);
         cond_signal(&thr->cond_var);
     } else if(thr->state == ZOMBIE) {
         // This thread has exited before, should never happen

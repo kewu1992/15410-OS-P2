@@ -85,7 +85,7 @@ UPDATE_METHOD = afs
 # A list of the test programs you want compiled in from the 410user/progs
 # directory
 #
-410TESTS = startle thr_exit_join misbehave_wrap misbehave excellent cyclone agility_drill largetest
+410TESTS = cvar_test mutex_destroy_test
 
 ###########################################################################
 # Test programs you have written which you wish to run
