@@ -95,8 +95,11 @@ int thr_create(void *(*func)(void *), void *args) {
 
     // create a new thread, tell it where it should start running (eip), and
     // its stack address (esp)
-    if (thr_create_kernel(func, (void*)(new_stack-4)) < 0)
+    int child_tid;
+    if ((child_tid = thr_create_kernel(func, (void*)(new_stack-4))) < 0)
         return -2;
+
+    //lprintf("tid: %d(%d), stack index: %d, stack addr: %x - %x", tid, child_tid, index, (unsigned int)(new_stack), (unsigned int)(new_stack - stack_size + 1));
 
     return tid;
 }
@@ -123,6 +126,7 @@ int thr_join(int tid, void **statusp) {
         case RUNNING:
             // tid is still running, block and waiting for it
             thr->state = JOINED;
+            //lprintf("tid %d ---> JOINED", thr->tid);
             cond_wait(&thr->cond_var, &mutex_arraytcb);
             // after returning from cond_wait(), tid becoms ZOMBIE,
             // fall through ZOMBIE case
@@ -134,6 +138,8 @@ int thr_join(int tid, void **statusp) {
                 uint32_t cur_stack_high = get_stack_high(index);
                 *statusp = *((void**)(cur_stack_high - sizeof(void*)));
             }
+
+             //lprintf("tid %d(%d) ---> finished", tid, thr->tid);
 
             // release resource
             arraytcb_delete_thread(tid);
@@ -152,6 +158,7 @@ void thr_exit(void *status) {
 
     // Get current thread tid
     int tid = thr_getid();
+    //lprintf("thraed %d(%d), ready to be killed at addr %x", tid, gettid(), (unsigned int)asm_get_esp());
 
     // When thr_create is called at this point
     // should be fine ... 
@@ -171,14 +178,14 @@ void thr_exit(void *status) {
 
     if(thr->state == ZOMBIE) {
         // This thread has exited before, should never happen
-        lprintf("Thread has called thr_exit() before, something's wrong");
+        lprintf("Thread %d(%d) at addr %x has called thr_exit() before, something's wrong", thr->tid, gettid(), (unsigned int)asm_get_esp());
         return;
     }
 
     // Thread is either running or someone has called join on it
     // Get stack high of current thread
     uint32_t cur_stack_high = get_stack_high(index);
-    lprintf("cur_stack_hign: %u", (unsigned)cur_stack_high);
+    //lprintf("cur_stack_hign: %u", (unsigned)cur_stack_high);
 
     // Push status on current stack high to let it be collected by a
     // thread who joins this thread
@@ -188,22 +195,22 @@ void thr_exit(void *status) {
     if(thr->state == RUNNING) {
         // Mark current thread as ZOMBIE
         thr->state = ZOMBIE;
+        //lprintf("tid %d ---> ZOMBIE", thr->tid);
     } else if(thr->state == JOINED) {
         // Signal the thread who called join
         cond_signal(&thr->cond_var);
     }
 
     mutex_unlock(&mutex_arraytcb);
-    lprintf("About to call vanish");
     vanish();
-    lprintf("Should never reach here");
+    lprintf("should never reach here");
     return;
 
 }
 
 int thr_getid() {
 
-    // mutex_lock(&mutex_arraytcb);
+    //mutex_lock(&mutex_arraytcb);
 
     // Get stack position index of the current thread
     int index = get_stack_position_index();
@@ -212,11 +219,11 @@ int thr_getid() {
     if(tcb == NULL) {
         // Something's wrong, debug
         lprintf("getid fails");
-        // mutex_unlock(&mutex_arraytcb);
+        mutex_unlock(&mutex_arraytcb);
         return -1;
     }
 
-    // mutex_unlock(&mutex_arraytcb);
+    //mutex_unlock(&mutex_arraytcb);
     return tcb->tid;
 }
 

@@ -81,14 +81,14 @@ uint32_t get_new_stack_top(int count) {
     uint32_t old_page_base = (root_thread_stack_low - 
             (count - 1) * stack_size) & PAGE_ALIGN_MASK;
 
-    lprintf("old_page_base: %x", (unsigned)old_page_base);
-    lprintf("new_page_base: %x", (unsigned)new_page_base);
+    //lprintf("old_page_base: %x", (unsigned)old_page_base);
+    //lprintf("new_page_base: %x", (unsigned)new_page_base);
 
     // Depending on how kernel schedules, a thread that's created later may
     // call this function earlier than one that's created earlier
     int num_pages = (old_page_base - new_page_base)/PAGE_SIZE;
 
-    lprintf("num_pages: %d", num_pages);
+    //lprintf("num_pages: %d", num_pages);
 
     // Allocate highest page of this stack region, fail is normal since this 
     // page may have been already been allocated 
@@ -162,9 +162,9 @@ int get_stack_position_index() {
     if(esp <= root_thread_stack_high && esp >= root_thread_stack_low) {
         return 0;
     } else {
-        // divide by stack_size + 1 so that all esp within a stack region 
-        // maps to the same number
-        return 1 + (root_thread_stack_low - esp)/(stack_size + 1);
+        // (root_thread_stack_low - esp - 1) so that all esp within a stack 
+        // region maps to the same number
+        return 1 + (root_thread_stack_low - esp - 1) / stack_size;
     }
 
 }

@@ -3,6 +3,7 @@
 
 #include <syscall.h>  // To use new_pages()
 #include <simics.h>   // To use lprintf to debug for the moment
+#include <stdint.h>
 
 /**
  * @brief Page size alignment mask 
