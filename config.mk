@@ -85,7 +85,7 @@ UPDATE_METHOD = afs
 # A list of the test programs you want compiled in from the 410user/progs
 # directory
 #
-410TESTS = cvar_test mutex_destroy_test
+410TESTS = cvar_test mutex_destroy_test misbehave_wrap misbehave cyclone agility_drill join_specific_test multitest paraguay juggle racer
 
 ###########################################################################
 # Test programs you have written which you wish to run
@@ -93,12 +93,12 @@ UPDATE_METHOD = afs
 # A list of the test programs you want compiled in from the user/progs
 # directory
 #
-STUDENTTESTS = wk_test_thrcreate small_test my_stack my_swiss my_swiss_join
+STUDENTTESTS = wk_test_thrcreate
 
 ###########################################################################
 # Object files for your thread library
 ###########################################################################
-THREAD_OBJS = malloc.o panic.o asm_xchg.o mutex.o queue.o thr_create_kernel.o thr_lib.o thr_lib_helper.o arraytcb.o cond_var.o asm_get_esp.o
+THREAD_OBJS = malloc.o panic.o asm_xchg.o mutex.o queue.o thr_create_kernel.o thr_lib.o thr_lib_helper.o arraytcb.o cond_var.o asm_get_esp.o sem.o
 
 # Thread Group Library Support.
 #

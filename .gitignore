@@ -4,15 +4,14 @@ bootfd.img
 *.dep
 *.a
 410user/exec2obj
-410user/progs/idle
-410user/progs/init
-410user/progs/shell
 kernel.strip
 bootfd.gz
 user_apps.S
 temp/*
 kernel.log
 .md5s
-user/progs/small_test
-user/progs/wk_test_print
+user/progs/*
+410user/progs/*
+!user/progs/*.c
+!410user/progs/*.c
 

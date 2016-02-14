@@ -32,6 +32,7 @@ void cond_wait(cond_t *cv, mutex_t *mp) {
 
     mutex_unlock(&cv->mutex);
     deschedule(&tmp->reject);
+    free(tmp);
 
     mutex_lock(mp);
 }
@@ -40,9 +41,9 @@ void cond_signal(cond_t *cv) {
     mutex_lock(&cv->mutex);
     node_t *tmp = dequeue(&cv->deque);
     if (tmp) {
+        int ktid = tmp->ktid;
         tmp->reject = 1;
-        make_runnable(tmp->ktid);
-        free(tmp);
+        make_runnable(ktid);
     }
     mutex_unlock(&cv->mutex);
 }
@@ -51,9 +52,9 @@ void cond_broadcast(cond_t *cv) {
     mutex_lock(&cv->mutex);
     node_t *tmp = dequeue(&cv->deque);
     while (tmp) {
+        int ktid = tmp->ktid;
         tmp->reject = 1;
-        make_runnable(tmp->ktid);
-        free(tmp);
+        make_runnable(ktid);
         tmp = dequeue(&cv->deque);
     }
     mutex_unlock(&cv->mutex);
