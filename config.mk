@@ -93,7 +93,7 @@ UPDATE_METHOD = afs
 # A list of the test programs you want compiled in from the user/progs
 # directory
 #
-STUDENTTESTS = wk_test_thrcreate small_test 
+STUDENTTESTS = wk_test_thrcreate small_test my_stack my_swiss my_swiss_join
 
 ###########################################################################
 # Object files for your thread library

@@ -2,6 +2,7 @@
 #include <thr_lib_helper.h>
 #include <arraytcb.h>
 
+
 /**
  * @brief Root thread stack low
  */
@@ -14,31 +15,6 @@ static uint32_t root_thread_stack_high;
 
 /** @brief The amount of stack space available for each thread */
 static unsigned int stack_size;
-
-/** @brief Get current root thread stack low
- *  
- *  @return Current root thread stack low
- *  @bug Will eventually put this call in libautostack
- */
-uint32_t get_root_thread_stack_low() {
-
-    return 0xffffe000;
-}
-
-/** @brief Get current root thread stack high
- *  
- *  @return Current root thread stack high
- *  @bug Will eventually put this call in libautostack
- */
-uint32_t get_root_thread_stack_high() {
-    
-    uint32_t stack_high = 0xffffffff;
-    while(stack_high % ALIGNMENT != 0) {
-        stack_high--;
-    }
-
-    return stack_high;
-}
 
 int thr_lib_helper_init(unsigned int size) {
 
@@ -71,7 +47,13 @@ uint32_t get_new_stack_top(int count) {
     // Once we create a new thread, the root thread's stack region is
     // fixed
     if(count == 1) {
+        // There's a race condition here, before the root_thread_stack_low
+        // is acquired, the other thread creation should wait
         root_thread_stack_low = get_root_thread_stack_low();
+        if(root_thread_stack_low % ALIGNMENT != 0) {
+            lprintf("get_root_thread_stack_low failed");
+            return 3;
+        }
     }
 
     // Assume pages on the stack grow down continuouly

@@ -5,6 +5,8 @@
 #include <simics.h>   // To use lprintf to debug for the moment
 #include <stdint.h>
 
+#include <autostack_public.h>
+
 /**
  * @brief Page size alignment mask 
  *
