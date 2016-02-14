@@ -6,8 +6,11 @@
  *  should find a suitable place with suitable size; 2) Should we 
  *  set a limit to the memory reachable by the root thread
  */
-#include <autostack_public.h>
 #include <autostack.h>
+#include <lib_public.h>
+
+/** @brief Exception stack high */
+static uint32_t exn_stack_high;
 
 /** @brief Root thread stack low */
 static uint32_t root_thread_stack_low;
@@ -28,7 +31,7 @@ static uint32_t root_thread_stack_high;
 uint32_t get_root_thread_stack_low() {
 
     // De-register exception handler to disable autostack
-    if(swexn((void *)0, (void *)0, (void *)0, (void *)0) < 0) {
+    if(swexn(NULL, NULL, NULL, NULL) < 0) {
         lprintf("Should never reach here, de-register failed");
         return 1;
     }
@@ -111,34 +114,14 @@ void swexn_handler(void *arg, ureg_t *ureg) {
 
         // Re-register exception handler and re-execute faulting instruction
         // Get exception stack high
-        uint32_t esp3 = get_swexn_stack_high();
-        if(swexn((void *)esp3, swexn_handler, (void *)0, ureg) < 0) {
+        uint32_t esp3 = exn_stack_high;
+        if(swexn((void *)esp3, swexn_handler, NULL, ureg) < 0) {
             lprintf("Should never reach here, re-register failed");
             return;
         }
     } else {
         lprintf("Ignore other exception: 0x%x", ureg->cause);
     }
-
-}
-
-/** @brief Get the exception stack high
- *
- *  @return One word higher than the first address that the kernel 
- *  should use to push values on the exception stack
- *
- *  @bug Exception stack high is hardcoded to an inproper place now. 
- *  Where should I put the exception handler stack, and how large
- *  should this stack be
- */
-uint32_t get_swexn_stack_high() {
-
-    uint32_t esp3 = 0xffffffff;
-    while(esp3 % ALIGNMENT != 0) {
-        esp3--;
-    }
-
-    return esp3;
 
 }
 
@@ -155,11 +138,25 @@ void install_autostack(void *stack_high, void *stack_low) {
     root_thread_stack_high = (uint32_t)stack_high;
     root_thread_stack_low = (uint32_t)stack_low;
 
-    // Get exception stack high
-    uint32_t esp3 = get_swexn_stack_high();
+    // Initialize malloc library and allocate an exception stack
+    if(malloc_init() < 0) {
+        lprintf("malloc_init failed");
+        return;
+    }
 
+    void *exn_stack_low = malloc(EXCEPTION_STACK_SIZE);
+    if(exn_stack_low == NULL) {
+        lprintf("malloc failed");
+        return;
+    }
+    exn_stack_high = (uint32_t)exn_stack_low + EXCEPTION_STACK_SIZE - 1;
+    while(exn_stack_high % ALIGNMENT != 0) {
+        exn_stack_high--;
+    }
+
+    uint32_t esp3 = exn_stack_high;
     // Register exception handler
-    if(swexn((void *)esp3, swexn_handler, (void *)0, (void *)0) < 0) {
+    if(swexn((void *)esp3, swexn_handler, NULL, NULL) < 0) {
         lprintf("Register exception hanlder failed");
         return;
     }

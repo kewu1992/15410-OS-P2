@@ -10,6 +10,7 @@
 #include <stddef.h>
 
 #include <mutex.h>
+#include <lib_public.h>
 
 /** @brief Mutex to guard malloc library */
 mutex_t mutex_malloc;

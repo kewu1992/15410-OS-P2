@@ -46,9 +46,6 @@ int asm_xchg(int *lock_available, int val);
 int thr_create_kernel(void *(*func)(void *), void *new_stack);
 
 
-
-int malloc_init();
-
 int thr_getktid();
 
 #endif /* THR_INTERNALS_H */

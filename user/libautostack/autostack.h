@@ -5,6 +5,8 @@
 #include <simics.h> // To use lprintf to debug
 
 #include <syscall.h>
+#include <stddef.h>
+#include <stdlib.h> 
 
 #define ALIGNMENT 4
 
@@ -15,6 +17,8 @@
  * will be 0xfffff000 
  */
 #define PAGE_ALIGN_MASK ((unsigned int) ~((unsigned int) (PAGE_SIZE-1)))
+
+#define EXCEPTION_STACK_SIZE PAGE_SIZE
 
 
 int allocate_pages(uint32_t range_high, uint32_t range_low);

@@ -45,8 +45,6 @@ int thr_init(unsigned int size) {
 
     isError |= mutex_init(&mutex_thread_count);
 
-    isError |= malloc_init();
-
     isError |= mutex_init(&mutex_arraytcb);
 
     isError |= arraytcb_init(INIT_THR_NUM);
