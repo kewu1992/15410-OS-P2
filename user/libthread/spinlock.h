@@ -13,7 +13,8 @@ typedef int spinlock_t;
 #define SPINLOCK_LOCK(lock)     do { \
                                     while (1) { \
                                         int i = 0; \
-                                        while (i<MAX_SPIN_NUM && !asm_xchg(lock, 0)) \
+                                        while (i<MAX_SPIN_NUM &&   \
+                                               !asm_xchg(lock, 0)) \
                                             i++; \
                                         if (i==MAX_SPIN_NUM) \
                                             yield(-1); \

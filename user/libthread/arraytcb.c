@@ -10,8 +10,8 @@
  *  stack i is not used by any thread.
  *
  *
-*  @bug array shouldn't always be extended --> watch out malloc error 
-*       (not enough memory, VM/PM)
+ *  @bug array shouldn't always be extended --> watch out malloc error 
+ *       (not enough memory, VM/PM)
  */
 
 #include <stdlib.h>

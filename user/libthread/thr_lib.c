@@ -144,6 +144,7 @@ int thr_join(int tid, void **statusp) {
     // tid has exitted
     mutex_unlock(&mutex_arraytcb);
 
+    // try to find exit status of tid in hash table
     int is_find;
     if (statusp)
         *statusp = hashtable_remove(&hash_exit, (void*)tid, &is_find);
@@ -171,6 +172,7 @@ void thr_exit(void *status) {
 
     //lprintf("thread %d(%d) start exiting", thr->tid, thr->ktid);
     
+    // put exit status to hash table for future reaping
     hashtable_put(&hash_exit, (void*)(thr->tid), status);
 
     mutex_lock(&mutex_arraytcb);
@@ -250,12 +252,29 @@ int thr_yield(int tid) {
 
 }
 
+/** @brief Initialize exit_status hash table
+ *  
+ *  First Set hash table size and hash function.
+ *  Then invoke hashtable_init() API to do initialization.
+ *
+ *  @return On success return 0, on error return a negative number
+ */
 int thr_hashtableexit_init() {
     hash_exit.size = EXIT_HASH_SIZE;
     hash_exit.func = thr_exitstatus_hashfunc;
     return hashtable_init(&hash_exit);
 }
 
+/** @brief The hash function for exit_status hash table
+ *  
+ *  Exit_status hash table takes tid as key. So this hash function simply using
+ *  modular to do hashing. Note that this hash function is specific for 
+ *  exit_status hash table.
+ *  
+ *  @param key The key to calculate index of exit_status hash table
+ * 
+ *  @return The index of exit_status hash table 
+ */
 int thr_exitstatus_hashfunc(void *key) {
     int tid = (int)key;
     return tid % EXIT_HASH_SIZE;

@@ -1,6 +1,27 @@
+/** @file hashtable.c
+ *  @brief This file contains implementation of a generic hash table
+ *
+ *  It implements some common API of a hash table, including init(), 
+ *  put(), get(), remove() and delete(). The size of hash table and
+ *  hash function are contained in the hashtable_t data structure 
+ *  which is self-defined by user and passed to this program. The 
+ *  collision resolution for this implementation is separate chaining
+ *  with linked lists. This hash table is thread-safe.
+ *
+ *
+ *  @bug array shouldn't always be extended --> watch out malloc error 
+ *       (not enough memory, VM/PM)
+ */
+
 #include <stdlib.h>
 #include <hashtable.h>
 
+/** @brief Initialize a hashtable data structure
+ *  
+ *  @param table The table that need to initialize
+ *
+ *  @return On success return 0, on error return a negative number      
+ */
 int hashtable_init(hashtable_t *table) {
     table->array = malloc(sizeof(hashnode_t) * table->size);
     int i;
@@ -10,6 +31,14 @@ int hashtable_init(hashtable_t *table) {
     return mutex_init(&table->lock);
 }
 
+/** @brief Put a <key, value> pair to a hash table
+ *
+ *  @param table The hash table to put <key, value> pair
+ *  @param key Key of <key, value> pair
+ *  @param value Value of <key, value> pair
+ *
+ *  @return Void
+ */
 void hashtable_put(hashtable_t *table, void* key, void* value) {
     int index = table->func(key);
 
@@ -23,6 +52,19 @@ void hashtable_put(hashtable_t *table, void* key, void* value) {
     mutex_unlock(&table->lock);
 }
 
+
+/** @brief Given a key, return the corresponding value in a hash table
+ *  
+ *  This method only return the value without delete the <key, value> pair
+ *  
+ *  @param table The hash table to look up value of <key, value> pair
+ *  @param key The key to look up value of <key, value> pair
+ *  @param is_find This is also a return value, it indicates if the key is 
+ *                 found in the hash table
+ *
+ *  @return The value of the <key, value> pair, return NULL if can not find
+ *          the key in the hash table
+ */
 void* hashtable_get(hashtable_t *table, void* key, int *is_find) {
     int index = table->func(key);
 
@@ -43,6 +85,19 @@ void* hashtable_get(hashtable_t *table, void* key, int *is_find) {
     return NULL;
 } 
 
+/** @brief Given a key, remove the corresponding <key, value> pair in a 
+ *         hash table
+ *  
+ *  This method will return the value and also delete the <key, value> pair
+ *  
+ *  @param table The hash table to delete <key, value> pair
+ *  @param key The key to delete <key, value> pair
+ *  @param is_find This is also a return value, it indicates if the key is 
+ *                 found in the hash table
+ *
+ *  @return The value of the <key, value> pair, return NULL if can not find
+ *          the key in the hash table
+ */
 void* hashtable_remove(hashtable_t *table, void* key, int *is_find) {
     int index = table->func(key);
 
@@ -67,6 +122,12 @@ void* hashtable_remove(hashtable_t *table, void* key, int *is_find) {
     return NULL;
 } 
 
+/** @brief Destroy a hashtable data structure
+ *  
+ *  @param table The table to be destroied
+ *
+ *  @return Void    
+ */
 void hashtable_destroy(hashtable_t *table) {
     hashnode_t *hp;
     int i;
