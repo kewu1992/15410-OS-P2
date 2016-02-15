@@ -48,4 +48,8 @@ int thr_create_kernel(void *(*func)(void *), void *new_stack);
 
 int thr_getktid();
 
+int thr_hashtableexit_init();
+
+int thr_exitstatus_hashfunc(void *key);
+
 #endif /* THR_INTERNALS_H */

@@ -28,13 +28,13 @@ int main(int argc, char **argv)
     int i;
     for (i = 1; i < 5; i++) {
         thr_create(func, (void *)buf);
-        if (i == 2){
-            int status;
-            thr_join(2, (void **)&status);
-            lprintf("exit status: %d", status);
-        }
+        sleep(10);
     }
     
+    int status;
+    thr_join(2, (void **)&status);
+    printf("exit status: %d", status);
+
     lprintf("master thread reach here");
     while (1)
         continue;

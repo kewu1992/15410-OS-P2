@@ -62,13 +62,15 @@ static void double_array() {
  *  The program will first check if there is any existing stack that is 
  *  available, if not it will allocate a new stack slot for the thread.
  *  
- *  @param tid The tid for the new thread that need to be inserted
+ *  @param tid The tid of the new thread that need to be inserted
+ *  @param is_newstack Also a return value, indicate if a new stack slot is used
+ *                     for the new thread
  *
- *  @return Return 0 means a old stack is used for the new thread, return 1
- *          means alloate a new stack slot for the new thread. 
+ *  @return The index of the stack that is used for the new thread
+ *          
  *
  */
-int arraytcb_insert_thread(int tid) {
+int arraytcb_insert_thread(int tid, int *is_newstack) {
     tcb_t* new_thread = malloc(sizeof(tcb_t));
     new_thread->tid = tid;
     new_thread->state = RUNNING;
@@ -78,14 +80,16 @@ int arraytcb_insert_thread(int tid) {
     for (i = 0; i < array->cursize; i++)
         if (!array->data[i]) {
             array->data[i] = new_thread;
-            return 0;
+            *is_newstack = 0;
+            return i;
         }
 
     if (array->cursize == array->maxsize)
         double_array(array);
 
-    array->data[array->cursize++] = new_thread;
-    return 1;
+    array->data[array->cursize] = new_thread;
+    *is_newstack = 1;
+    return array->cursize++;
 }
 
 /** @brief Delete a thread from arraytcb
