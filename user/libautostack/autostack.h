@@ -18,7 +18,7 @@
  */
 #define PAGE_ALIGN_MASK ((unsigned int) ~((unsigned int) (PAGE_SIZE-1)))
 
-#define EXCEPTION_STACK_SIZE PAGE_SIZE
+#define EXCEPTION_STACK_SIZE (PAGE_SIZE/16)
 
 
 int allocate_pages(uint32_t range_high, uint32_t range_low);

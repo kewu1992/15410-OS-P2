@@ -2,15 +2,16 @@
  *
  *  @brief This file contains implementation of autostack library
  *
- *  @bug 1) Now hard code exception stack position to an inproper place
- *  should find a suitable place with suitable size; 2) Should we 
- *  set a limit to the memory reachable by the root thread
+ *  @bug 1) Should we set a limit to the memory reachable by the root thread
  */
 #include <autostack.h>
 #include <lib_public.h>
 
 /** @brief Exception stack high */
 static uint32_t exn_stack_high;
+
+/** @brief Exception stack low */
+static uint32_t exn_stack_low;
 
 /** @brief Root thread stack low */
 static uint32_t root_thread_stack_low;
@@ -24,7 +25,7 @@ static uint32_t root_thread_stack_high;
  *  before a new thread is created. This function is 
  *  called when the thread creation library is trying
  *  to create a new thread, we should fixate root thread
- *  low now and disable autostack
+ *  low now and disable autostack, freeing exception stack
  *
  *  @return Current root thread stack low; 1 if failure
  */
@@ -34,6 +35,11 @@ uint32_t get_root_thread_stack_low() {
     if(swexn(NULL, NULL, NULL, NULL) < 0) {
         lprintf("Should never reach here, de-register failed");
         return 1;
+    }
+
+    // Free exception stack space if we have allocated before
+    if(exn_stack_low != 0) {
+        free((void *)exn_stack_low);
     }
 
     return root_thread_stack_low;
@@ -144,11 +150,13 @@ void install_autostack(void *stack_high, void *stack_low) {
         return;
     }
 
-    void *exn_stack_low = malloc(EXCEPTION_STACK_SIZE);
-    if(exn_stack_low == NULL) {
+    void *new_base = malloc(EXCEPTION_STACK_SIZE);
+    if(new_base == NULL) {
         lprintf("malloc failed");
         return;
     }
+
+    exn_stack_low = (uint32_t)new_base;
     exn_stack_high = (uint32_t)exn_stack_low + EXCEPTION_STACK_SIZE - 1;
     while(exn_stack_high % ALIGNMENT != 0) {
         exn_stack_high--;
