@@ -11,30 +11,54 @@
 #include <stdio.h>
 #include <simics.h>
 #include <mutex.h>
+#include <thread.h>
 
-int main()
-{
-    mutex_t mp; 
-    // Initiate first
-    mutex_init(&mp);
-    lprintf("mutex inited, lock_available: %d", mp.lock_available);
+mutex_t mp;
 
+void* func(void* arg) {
+    lprintf("tid %d try to get lock", thr_getid());
     mutex_lock(&mp);
-
-    lprintf("mutex locked, lock_available: %d", mp.lock_available);
-/*
-    lprintf("try lock again");
-
-    mutex_lock(&mp);
-    lprintf("Shouldn't reach here");
-    lprintf("mutex locked, lock_available: %d", mp.lock_available);
-*/
+    
+    lprintf("tid %d has got lock", thr_getid());
+    int i;
+    for (i = 0; i < 10; i++){
+        lprintf("tid %d count down: %d", thr_getid(), 10-i);
+        sleep(10);
+    }
+    lprintf("tid %d ready to realse lock", thr_getid());
 
     mutex_unlock(&mp);
-    lprintf("mutex unlocked");
-    lprintf("try lock again");
+    return 0;
+}
+
+int main()
+{   
+    thr_init(4096);
+
+    mutex_init(&mp);
     mutex_lock(&mp);
-    lprintf("Should reach here");
+
+    lprintf("master thread has got lock");
+
+    int tid1 = thr_create(func, NULL);
+    int tid2 = thr_create(func, NULL);
+
+    int i;
+    for (i = 0; i < 10; i++){
+        lprintf("master count down: %d", 10-i);
+        sleep(10);
+    }
+    
+
+    lprintf("master thread, ready to release lock");    
+    mutex_unlock(&mp);
+
+    thr_join(tid1, NULL);
+    thr_join(tid2, NULL);
+
+    lprintf("master thread, ready to destroy lock");    
+
+    mutex_destroy(&mp);
 
     return 0;
 }

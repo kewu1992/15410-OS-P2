@@ -14,8 +14,10 @@
 #include <thr_lib_helper.h>
 #include <thr_internals.h>
 #include <arraytcb.h>
+#include <hashtable.h>
 
 #define INIT_THR_NUM 32
+#define EXIT_HASH_SIZE 1021
 
 /** @brief The amount of stack space available for each thread */
 static unsigned int stack_size;
@@ -27,6 +29,8 @@ static unsigned int thread_count;
 mutex_t mutex_thread_count;
 
 mutex_t mutex_arraytcb;
+
+static hashtable_t hash_exit;
 
 /** @brief Initialize the thread library
  *
@@ -43,9 +47,10 @@ int thr_init(unsigned int size) {
 
     int isError = 0;
 
-    isError |= mutex_init(&mutex_thread_count);
-
+    // malloc_init must be the first one, because other *_init may use malloc
     isError |= malloc_init();
+
+    isError |= mutex_init(&mutex_thread_count);
 
     isError |= mutex_init(&mutex_arraytcb);
 
@@ -53,8 +58,11 @@ int thr_init(unsigned int size) {
 
     isError |= thr_lib_helper_init(stack_size);
 
+    isError |= thr_hashtableexit_init();
+
     // insert master thread to arraytcb
-    arraytcb_insert_thread(0);
+    int tmp;
+    arraytcb_insert_thread(0, &tmp);
     // set ktid for master thread
     arraytcb_set_ktid(0, gettid());
 
@@ -77,28 +85,28 @@ int thr_create(void *(*func)(void *), void *args) {
     int tid = thread_count++;
     mutex_unlock(&mutex_thread_count);
 
-    uint32_t new_stack = 0;
-    int index;
+    uint32_t stack_addr = 0;
+    int index, is_newstack;
 
     mutex_lock(&mutex_arraytcb);
-    if (!arraytcb_insert_thread(tid)) {
-        index = arraytcb_find_thread(tid);
-        new_stack = get_stack_high(index);
-    } else 
-        index = arraytcb_find_thread(tid);
+    index = arraytcb_insert_thread(tid, &is_newstack);
     mutex_unlock(&mutex_arraytcb);
 
-    // allocate a stack with stack_size for new thread
-    if (!new_stack && (new_stack = (uint32_t)get_new_stack_top(index)) == -1)
-        return -1;
+    if (!is_newstack) {
+        stack_addr = get_stack_high(index);
+    } else {
+        // allocate a stack with stack_size for new thread
+        if ((stack_addr = (uint32_t)get_new_stack_top(index)) == -1)
+            return -1;
+    }
 
     // "push" argument to new stack  
-    memcpy((void*)(new_stack-4), &args, 4);
+    memcpy((void*)(stack_addr-4), &args, 4);
 
     // create a new thread, tell it where it should start running (eip), and
     // its stack address (esp)
     int child_ktid;
-    if ((child_ktid = thr_create_kernel(func, (void*)(new_stack-4))) < 0)
+    if ((child_ktid = thr_create_kernel(func, (void*)(stack_addr-4))) < 0)
         return -2;
 
     arraytcb_set_ktid(index, child_ktid);
@@ -121,6 +129,7 @@ int thr_join(int tid, void **statusp) {
     mutex_lock(&mutex_arraytcb);
     int index = arraytcb_find_thread(tid);
     if (index >= 0) {
+        // tid can be found in arraytcb, it is still running
         tcb_t* thr = arraytcb_get_thread(index);
         switch(thr->state){
         case JOINED:
@@ -132,30 +141,24 @@ int thr_join(int tid, void **statusp) {
             thr->state = JOINED;
             //lprintf("tid %d(%d) ---> JOINED", thr->tid, thr->ktid);
             cond_wait(&thr->cond_var, &mutex_arraytcb);
-            // after returning from cond_wait(), tid becoms ZOMBIE,
-            // fall through ZOMBIE case
-        case ZOMBIE:
-            // tid has exitted
-
-            if (statusp) {
-                // get exit status
-                uint32_t cur_stack_high = get_stack_high(index);
-                *statusp = *((void**)(cur_stack_high - sizeof(void*)));
-            }
-
-             //lprintf("tid %d(%d) ---> finished", tid, thr->tid);
-
-            // release resource
-            arraytcb_delete_thread(tid);
         } 
+    } 
 
-        mutex_unlock(&mutex_arraytcb);
+    // tid has exitted
+    mutex_unlock(&mutex_arraytcb);
+
+    int is_find;
+    if (statusp)
+        *statusp = hashtable_remove(&hash_exit, (void*)tid, &is_find);
+    else
+        hashtable_remove(&hash_exit, (void*)tid, &is_find);
+
+    if (is_find)
         return 0;
-    } else {
-        // tid can not be found, tid has already been cleaned up
-        mutex_unlock(&mutex_arraytcb);
-        return -2;
-    }
+    else
+        // can not find exit status of tid in hash table, something wrong
+        return -3;
+   
 }
 
 void thr_exit(void *status) {
@@ -170,33 +173,20 @@ void thr_exit(void *status) {
     }
 
     //lprintf("thread %d(%d) start exiting", thr->tid, thr->ktid);
-
-
-    // Get stack high of current thread
-    uint32_t cur_stack_high = get_stack_high(index);
-    //lprintf("cur_stack_hign: %u", (unsigned)cur_stack_high);
-
-    // Push status on current stack high to let it be collected by a
-    // thread who joins this thread
-    memcpy((void*)(cur_stack_high - sizeof(void *)), &status, 
-            sizeof(void *));
+    
+    hashtable_put(&hash_exit, (void*)(thr->tid), status);
 
     mutex_lock(&mutex_arraytcb);
 
     // Thread is either running or someone has called join on it
-    if(thr->state == RUNNING) {
-        // Mark current thread as ZOMBIE
-        thr->state = ZOMBIE;
-        // lprintf("thread %d(%d) becomes zombie", thr->tid, thr->ktid);
-    } else if(thr->state == JOINED) {
+    if(thr->state == JOINED) {
         // Signal the thread who called join
         // lprintf("thread %d(%d) cond_signal", thr->tid, thr->ktid);
         cond_signal(&thr->cond_var);
-    } else if(thr->state == ZOMBIE) {
-        // This thread has exited before, should never happen
-        lprintf("Thread %d(%d) at addr %x has called thr_exit() before, something's wrong", thr->tid, gettid(), (unsigned int)asm_get_esp());
-        return;
-    }
+    } 
+
+    // release resource
+    arraytcb_delete_thread(thr->tid);
 
     mutex_unlock(&mutex_arraytcb);
 
@@ -261,5 +251,16 @@ int thr_yield(int tid) {
 
     return yield(ktid);
 
+}
+
+int thr_hashtableexit_init() {
+    hash_exit.size = EXIT_HASH_SIZE;
+    hash_exit.func = thr_exitstatus_hashfunc;
+    return hashtable_init(&hash_exit);
+}
+
+int thr_exitstatus_hashfunc(void *key) {
+    int tid = (int)key;
+    return tid % EXIT_HASH_SIZE;
 }
 

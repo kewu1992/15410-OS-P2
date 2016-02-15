@@ -51,4 +51,8 @@ int malloc_init();
 
 int thr_getktid();
 
+int thr_hashtableexit_init();
+
+int thr_exitstatus_hashfunc(void *key);
+
 #endif /* THR_INTERNALS_H */

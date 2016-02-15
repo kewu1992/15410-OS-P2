@@ -5,8 +5,7 @@
 
 typedef enum {
     RUNNING,
-    JOINED,
-    ZOMBIE
+    JOINED
 } thr_state_t;
 
 typedef struct {
@@ -18,7 +17,7 @@ typedef struct {
 
 int arraytcb_init(int size);
 
-int arraytcb_insert_thread(int tid);
+int arraytcb_insert_thread(int tid, int *is_newstack);
 
 int arraytcb_delete_thread(int tid);
 
