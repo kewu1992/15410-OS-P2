@@ -31,7 +31,9 @@ void cond_wait(cond_t *cv, mutex_t *mp) {
     mutex_unlock(mp);
 
     mutex_unlock(&cv->mutex);
-    deschedule(&tmp->reject);
+    while(!tmp->reject) {
+        deschedule(&tmp->reject);
+    }
     
     free(tmp);
 
