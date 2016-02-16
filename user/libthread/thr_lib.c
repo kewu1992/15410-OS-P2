@@ -2,6 +2,7 @@
  *  @brief This file contains implementation of thread management library 
  *
  *  @bug Better use spin lock for mutex_thread_count
+ *       When on error, relesae resource (e.g. when thr_create() return -2)
  */
 
 #include <stdlib.h>
@@ -93,20 +94,30 @@ int thr_create(void *(*func)(void *), void *args) {
         stack_addr = get_stack_high(index);
     } else {
         // allocate a stack with stack_size for new thread
-        if ((stack_addr = (uint32_t)get_new_stack_top(index)) == -1)
+        if ((stack_addr = (uint32_t)get_new_stack_top(index)) % ALIGNMENT != 0)
+            // return value can not be divided by ALIGNMENT, it is an error 
             return -1;
     }
 
     // "push" argument to new stack  
     memcpy((void*)(stack_addr-4), &args, 4);
 
+    // "push" ktid to new stack --> will do in thr_create_kernel()
+
+    // "push" stack index to new stack  
+    memcpy((void*)(stack_addr-12), &index, 4);
+
     // create a new thread, tell it where it should start running (eip), and
     // its stack address (esp)
     int child_ktid;
-    if ((child_ktid = thr_create_kernel(func, (void*)(stack_addr-4))) < 0)
+    if ((child_ktid = thr_create_kernel(func, (void*)(stack_addr-12))) < 0)
         return -2;
 
-    arraytcb_set_ktid(index, child_ktid);
+    mutex_lock(&mutex_arraytcb);
+    tcb_t *thr = arraytcb_get_thread(index);
+    if (thr && thr->tid == tid)
+        arraytcb_set_ktid(index, child_ktid);
+    mutex_unlock(&mutex_arraytcb);
 
     //lprintf("tid: %d(%d), stack index: %d, stack addr: %x - %x", tid, child_tid, index, (unsigned int)(new_stack), (unsigned int)(new_stack - stack_size + 1));
 
