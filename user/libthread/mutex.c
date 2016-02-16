@@ -38,7 +38,9 @@ void mutex_lock(mutex_t *mp) {
         enqueue(&mp->deque, tmp);
             
         SPINLOCK_UNLOCK(&mp->inner_lock);
-        deschedule(&tmp->reject);
+        while(!tmp->reject) {
+            deschedule(&tmp->reject);
+        }
 
         free(tmp);
     }

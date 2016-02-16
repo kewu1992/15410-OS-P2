@@ -7,7 +7,7 @@
 
 
 typedef struct rwlock {
-  /* fill this in */
+    int place_holder;
 } rwlock_t;
 
 #endif /* _RWLOCK_TYPE_H */
