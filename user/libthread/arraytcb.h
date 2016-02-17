@@ -19,11 +19,11 @@ int arraytcb_init(int size);
 
 int arraytcb_insert_thread(int tid, int *is_newstack);
 
-int arraytcb_delete_thread(int tid);
+int arraytcb_delete_thread(int index);
 
 tcb_t* arraytcb_get_thread(int index);
 
-int arraytcb_find_thread(int tid);
+tcb_t* arraytcb_find_thread(int tid);
 
 int arraytcb_set_ktid(int index, int ktid);
 

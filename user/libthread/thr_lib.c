@@ -135,10 +135,9 @@ int thr_join(int tid, void **statusp) {
     mutex_unlock(&mutex_thread_count);
 
     mutex_lock(&mutex_arraytcb);
-    int index = arraytcb_find_thread(tid);
-    if (index >= 0) {
+    tcb_t* thr = arraytcb_find_thread(tid);
+    if (thr) {
         // tid can be found in arraytcb, it is still running
-        tcb_t* thr = arraytcb_get_thread(index);
         switch(thr->state){
         case JOINED:
             // tid has been joined by other thread
@@ -196,7 +195,7 @@ void thr_exit(void *status) {
     } 
 
     // release resource
-    arraytcb_delete_thread(thr->tid);
+    arraytcb_delete_thread(index);
 
     mutex_unlock(&mutex_arraytcb);
 
@@ -214,8 +213,8 @@ int thr_getid() {
     // Get stack position index of the current thread
     int index = get_stack_position_index();
 
-    tcb_t *tcb = arraytcb_get_thread(index);
-    if(tcb == NULL) {
+    tcb_t *thr = arraytcb_get_thread(index);
+    if(thr == NULL) {
         // Something's wrong, debug
         lprintf("getid fails");
         //mutex_unlock(&mutex_arraytcb);
@@ -223,40 +222,37 @@ int thr_getid() {
     }
 
     //mutex_unlock(&mutex_arraytcb);
-    return tcb->tid;
+    return thr->tid;
 }
 
 int thr_getktid() {
     // Get stack position index of the current thread
     int index = get_stack_position_index();
 
-    tcb_t *tcb = arraytcb_get_thread(index);
-    if(tcb == NULL) {
+    tcb_t *thr = arraytcb_get_thread(index);
+    if(thr == NULL) {
         // Something's wrong, debug
         lprintf("gektid fails");
         return -1;
     }
 
-    return tcb->ktid;
+    return thr->ktid;
 }
 
 int thr_yield(int tid) {
-    
     if (tid == -1)
         return yield(-1);
 
     mutex_lock(&mutex_arraytcb);
-    int index = arraytcb_find_thread(tid);
+    tcb_t *thr = arraytcb_find_thread(tid);
     
-
-    if (index < 0){
+    if (!thr){
         // tid doesn't exist
         mutex_unlock(&mutex_arraytcb);
         return -1;
     }
 
-    tcb_t *tcb = arraytcb_get_thread(index);
-    int ktid = tcb->ktid;
+    int ktid = thr->ktid;
     mutex_unlock(&mutex_arraytcb);
 
     return yield(ktid);

@@ -19,9 +19,15 @@
 #include <cond.h>
 #include <arraytcb.h>
 
+typedef struct availnode_s {
+    struct availnode_s *next;
+    int index;
+} availnode_t;
+
 static struct arraytcb_s {
     int maxsize, cursize;
     tcb_t** data;
+    availnode_t *avail_list;
 } *array;
 
 /** @brief Initialize arraytcb data structure
@@ -38,6 +44,9 @@ int arraytcb_init(int size) {
     array->maxsize = size;
     array->cursize = 0;
     array->data = calloc(size, sizeof(tcb_t*));
+
+    array->avail_list = malloc(sizeof(availnode_t));
+    array->avail_list->next = NULL;
     return 0;
 }
 
@@ -76,6 +85,7 @@ int arraytcb_insert_thread(int tid, int *is_newstack) {
     new_thread->state = RUNNING;
     cond_init(&new_thread->cond_var);
 
+    /*
     int i;
     for (i = 0; i < array->cursize; i++)
         if (!array->data[i]) {
@@ -83,13 +93,25 @@ int arraytcb_insert_thread(int tid, int *is_newstack) {
             *is_newstack = 0;
             return i;
         }
+    */
 
-    if (array->cursize == array->maxsize)
-        double_array(array);
+    if (array->avail_list->next) {
+        availnode_t *tmp = array->avail_list->next;
+        array->avail_list->next = array->avail_list->next->next;
+        int index = tmp->index;
+        free(tmp);
+        
+        array->data[index] = new_thread;
+        *is_newstack = 0;
+        return index;
+    } else {
+        if (array->cursize == array->maxsize)
+            double_array(array);
 
-    array->data[array->cursize] = new_thread;
-    *is_newstack = 1;
-    return array->cursize++;
+        array->data[array->cursize] = new_thread;
+        *is_newstack = 1;
+        return array->cursize++;
+    }
 }
 
 /** @brief Delete a thread from arraytcb
@@ -97,21 +119,24 @@ int arraytcb_insert_thread(int tid, int *is_newstack) {
  *  After deletion, the stack that belonged to the deleted thread becomes 
  *  available for other threads to use.
  *  
- *  @param tid The tid for the thread that need to be deleted
+ *  @param index The stack index for the thread that need to be deleted
  *
  *  @return On success return 0, on error return -1
  *
  */
-int arraytcb_delete_thread(int tid) {
-    int i;
-    for (i = 0; i < array->cursize; i++)
-        if (array->data[i] && array->data[i]->tid == tid) {
-            cond_destroy(&array->data[i]->cond_var);
-            free(array->data[i]);
-            array->data[i] = NULL;
-            return 0;
-        }
-    return -1;
+int arraytcb_delete_thread(int index) {
+    if (array->data[index]){
+        cond_destroy(&array->data[index]->cond_var);
+        free(array->data[index]);
+        array->data[index] = NULL;
+
+        availnode_t *tmp = malloc(sizeof(availnode_t));
+        tmp->index = index;
+        tmp->next = array->avail_list->next;
+        array->avail_list->next = tmp;
+        return 0;
+    } else
+        return -1;
 }
 
 /** @brief Get the tcb structure given an array index
@@ -136,12 +161,12 @@ tcb_t* arraytcb_get_thread(int index) {
  *          -1 (can not find the thread in arraytcb)
  *
  */
-int arraytcb_find_thread(int tid) {
+tcb_t* arraytcb_find_thread(int tid) {
     int i;
     for (i = 0; i < array->cursize; i++)
        if (array->data[i] && array->data[i]->tid == tid)
-            return i;
-    return -1; 
+            return array->data[i];
+    return NULL; 
 }
 
 int arraytcb_set_ktid(int index, int ktid) {
