@@ -94,9 +94,11 @@ int thr_create(void *(*func)(void *), void *args) {
         stack_addr = get_stack_high(index);
     } else {
         // allocate a stack with stack_size for new thread
-        if ((stack_addr = (uint32_t)get_new_stack_top(index)) % ALIGNMENT != 0)
+        if ((stack_addr = (uint32_t)get_new_stack_top(index)) % ALIGNMENT != 0){
             // return value can not be divided by ALIGNMENT, it is an error 
+            lprintf("%d: get_new_stack_top() error", tid);
             return -1;
+        }
     }
 
     // "push" argument to new stack  
@@ -110,8 +112,10 @@ int thr_create(void *(*func)(void *), void *args) {
     // create a new thread, tell it where it should start running (eip), and
     // its stack address (esp)
     int child_ktid;
-    if ((child_ktid = thr_create_kernel(func, (void*)(stack_addr-12))) < 0)
+    if ((child_ktid = thr_create_kernel(func, (void*)(stack_addr-12))) < 0) {
+        lprintf("%d: thr_create_kernel() error", tid);
         return -2;
+    }
 
     mutex_lock(&mutex_arraytcb);
     tcb_t *thr = arraytcb_get_thread(index);
