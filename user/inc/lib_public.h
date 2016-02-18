@@ -1,19 +1,51 @@
 /** @file lib_public.c
  *  @brief Declares functions that are public among libraries
  *
- *  @bug Better use spin lock for mutex_thread_count
  */
 #ifndef _LIB_PUBLIC_H
 #define _LIB_PUBLIC_H
 
-#include <stdint.h>
+/**
+ * @brief Alignment requirement of memory address for stack operation
+ */
+#define ALIGNMENT 4
 
-// libautostack
+/**
+ * @brief Page size alignment mask 
+ *
+ * If PAGE_SIZE is 4096 (0x00001000), then PAGE_ALIGN_MASK will be 0xfffff000.
+ */
+#define PAGE_ALIGN_MASK ((unsigned int) ~((unsigned int) (PAGE_SIZE-1)))
+
+/** @breif Error code defined by kernel that OS has insufficient resources */
+#define ERROR_NEW_PAGES_INSUFFICIENT_RESOURCE (-1)
+
+/** @breif Error code defined by kernel that any portion of the requested 
+ *  region overlap with existing task address space 
+ */
+#define ERROR_NEW_PAGES_OVERLAP_EXISTING_REGION (-2)
+
+/** @brief Error code indicating new_pages() related errors
+  *
+  * The value is not aligned so that it wouldn't confuse with valid page 
+  * address. The intention of making this error code positive is that in some 
+  * functions that return an unsigned memory address, a positive error code 
+  * would be handy.
+  */
+#define ERROR_NEW_PAGES_GENERAL (3)
+
+/** @brief Error code indicating exception handler registration error */
+#define ERROR_SWEXN_REGIS (3)
+
+/** @brief Error code indicating memory address misalignment */
+#define ERROR_MISALIGNMENT (3)
+
+// Functions in libautostack for other lib to use
 uint32_t get_root_thread_stack_low();
 uint32_t get_root_thread_stack_high();
 
-// libthread
+// Functions in libthread for other lib to use
 int malloc_init();
 
-#endif /* _AUTOSTACK_H */
+#endif 
 

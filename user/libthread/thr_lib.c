@@ -75,8 +75,8 @@ int thr_init(unsigned int size) {
  *  @param func The address of function for new thread to run
  *  @param args The argument that passed to the function 
  *              for new thread to run  
- *  @return On success the thread ID of the new thread is returned, on error a 
- *          negative number is returned
+ *  @return On success the thread ID of the new thread is returned, on error
+ *          a negative number is returned
  */
 int thr_create(void *(*func)(void *), void *args) {
     mutex_lock(&mutex_thread_count);
@@ -94,7 +94,8 @@ int thr_create(void *(*func)(void *), void *args) {
         stack_addr = get_stack_high(index);
     } else {
         // allocate a stack with stack_size for new thread
-        if ((stack_addr = (uint32_t)get_new_stack_top(index)) % ALIGNMENT != 0){
+        if ((stack_addr = (uint32_t)get_new_stack_top(index)) 
+                % ALIGNMENT != 0){
             // return value can not be divided by ALIGNMENT, it is an error 
             lprintf("%d: get_new_stack_top() error", tid);
             return -1;
@@ -122,8 +123,6 @@ int thr_create(void *(*func)(void *), void *args) {
     if (thr && thr->tid == tid)
         arraytcb_set_ktid(index, child_ktid);
     mutex_unlock(&mutex_arraytcb);
-
-    //lprintf("tid: %d(%d), stack index: %d, stack addr: %x - %x", tid, child_tid, index, (unsigned int)(new_stack), (unsigned int)(new_stack - stack_size + 1));
 
     return tid;
 }
@@ -278,7 +277,7 @@ int thr_hashtableexit_init() {
 
 /** @brief The hash function for exit_status hash table
  *  
- *  Exit_status hash table takes tid as key. So this hash function simply using
+ *  Exit_status hash table takes tid as key. So this hash function simply uses
  *  modular to do hashing. Note that this hash function is specific for 
  *  exit_status hash table.
  *  

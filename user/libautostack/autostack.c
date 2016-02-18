@@ -2,7 +2,7 @@
  *
  *  @brief This file contains implementation of autostack library
  *
- *  @bug 1) Should we set a limit to the memory reachable by the root thread
+ *  @bug None known
  */
 #include <autostack.h>
 #include <lib_public.h>
@@ -21,20 +21,19 @@ static uint32_t root_thread_stack_high;
 
 /** @brief Get current root thread stack low
  *  
- *  Root thread stack low has the chance to grow down
- *  before a new thread is created. This function is 
- *  called when the thread creation library is trying
- *  to create a new thread, we should fixate root thread
- *  low now and disable autostack, freeing exception stack
+ *  Root thread stack low has the chance to grow down before a new thread is 
+ *  created. This function is called when the thread creation library is 
+ *  trying to create a new thread, we should fixate root thread low now and 
+ *  disable autostack, freeing exception stack. 
  *
  *  @return Current root thread stack low; 1 if failure
  */
 uint32_t get_root_thread_stack_low() {
 
-    // De-register exception handler to disable autostack
+    // Autostack is not used in multi-threaded mode, de-register exception
+    // handler and free exception stack space
     if(swexn(NULL, NULL, NULL, NULL) < 0) {
-        lprintf("Should never reach here, de-register failed");
-        return 1;
+        return ERROR_SWEXN_REGIS;
     }
 
     // Free exception stack space if we have allocated before
@@ -81,9 +80,7 @@ int allocate_pages(uint32_t range_high, uint32_t range_low) {
 
     if(num_pages > 0 && 
             new_pages((void *)lowest_page_base, num_pages * PAGE_SIZE) != 0) {
-
-        lprintf("New page failed, something's wrong");
-        return 1;
+        return ERROR_NEW_PAGES_GENERAL;
     }    
 
     return lowest_page_base;
@@ -91,13 +88,13 @@ int allocate_pages(uint32_t range_high, uint32_t range_low) {
 
 /** @brief Exception handler for autostack 
  *
- *  Only handles stack growth for root thread before a new thread
- *  is created. Expands the root thread's stack region down to the 
- *  page where a memory address which results in fault page is in.
- *
- *  @param arg The exception handler argument, ignored
- *  @param ureg The saved execution environment at the moment 
- *  exception happened
+ *  Only handles stack growth for root thread before a new thread is created. 
+ *  Expands the root thread's stack region down to the page where a memory 
+ *  address which results in fault page is in.
+
+ *  @param arg The exception handler argument, ignored.
+ *  @param ureg The saved execution environment at the moment the exception 
+ *  happened.
  *
  *  @return void
  */
@@ -105,14 +102,22 @@ void swexn_handler(void *arg, ureg_t *ureg) {
 
     // Only handle page fault for root stack growth, ignore other exceptions
     if(ureg->cause == SWEXN_CAUSE_PAGEFAULT) {
+        // Check if the faulting address is within the current stack frame,
+        // and if so, try allocating new pages for it; else, that's an
+        // invalid memory reference, let kernel handle
 
         // ureg->cr2 is the memory address that resulted in the fault
-        // After this call, memory region from param1 to param2 
-        // (inclusive) will become valid
+        // The faulting address is an invalid memory reference
+        if(ureg->cr2 > ureg->ebp || ureg->cr2 < ureg->esp) {
+            return;
+        }
+        
+        // Try allocating new pages for it
+        // After this call, memory region down to faulting address
+        // will become valid if pages are successfully allocated
         uint32_t new_root_thread_stack_low =
             allocate_pages(root_thread_stack_low - 1, ureg->cr2); 
-        if(new_root_thread_stack_low == 1) {
-            lprintf("allocate_pages failed");
+        if(new_root_thread_stack_low == ERROR_NEW_PAGES_GENERAL) {
             return;
         }
         // Update root thread's valid stack region
@@ -122,12 +127,10 @@ void swexn_handler(void *arg, ureg_t *ureg) {
         // Get exception stack high
         uint32_t esp3 = exn_stack_high;
         if(swexn((void *)esp3, swexn_handler, NULL, ureg) < 0) {
-            lprintf("Should never reach here, re-register failed");
+            // Registration failed
             return;
         }
-    } else {
-        lprintf("Ignore other exception: 0x%x", ureg->cause);
-    }
+    } 
 
 }
 
@@ -165,7 +168,6 @@ void install_autostack(void *stack_high, void *stack_low) {
     uint32_t esp3 = exn_stack_high;
     // Register exception handler
     if(swexn((void *)esp3, swexn_handler, NULL, NULL) < 0) {
-        lprintf("Register exception hanlder failed");
         return;
     }
 }

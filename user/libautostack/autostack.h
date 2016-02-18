@@ -8,18 +8,12 @@
 #include <stddef.h>
 #include <stdlib.h> 
 
-#define ALIGNMENT 4
+#include <lib_public.h>
 
-/**
- * @brief Page size alignment mask 
- *
- * If PAGE_SIZE is 4096, i.e., 0x00001000, then PAGE_ALIGN_MASK 
- * will be 0xfffff000 
- */
-#define PAGE_ALIGN_MASK ((unsigned int) ~((unsigned int) (PAGE_SIZE-1)))
-
+/** @brief Exception stack size 
+  * The size is set to be sufficient enough
+  */
 #define EXCEPTION_STACK_SIZE (PAGE_SIZE/16)
-
 
 int allocate_pages(uint32_t range_high, uint32_t range_low);
 void swexn_handler(void *arg, ureg_t *ureg);

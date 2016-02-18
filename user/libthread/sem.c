@@ -90,7 +90,6 @@ void sem_signal(sem_t *sem) {
  */
 void sem_destroy(sem_t *sem) {
 
-    // Optional, though
     sem->count = -1;
 
     mutex_destroy(&sem->mutex);

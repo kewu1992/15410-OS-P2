@@ -36,23 +36,13 @@ int thr_lib_helper_init(unsigned int size) {
  *
  *  @return Stack top for a new thread
  *
- *  @bug 1) Don't compare root thread stack low with stack_size, will
- *  address it when doing autostack 2) Don't reuse stack space after 
- *  thread being reaped, will address it when doing thread garbage
- *  collection.
- *
  */
 uint32_t get_new_stack_top(int count) {
 
-    // Once we create a new thread, the root thread's stack region is
-    // fixed
     if(count == 1) {
-        // There's a race condition here, before the root_thread_stack_low
-        // is acquired, the other thread creation should wait
         root_thread_stack_low = get_root_thread_stack_low();
-        if(root_thread_stack_low % ALIGNMENT != 0) {
-            lprintf("get_root_thread_stack_low failed");
-            return 3;
+        if(root_thread_stack_low % ALIGNMENT) {
+            return ERROR_MISALIGNMENT;
         }
     }
 
@@ -63,38 +53,33 @@ uint32_t get_new_stack_top(int count) {
     uint32_t old_page_base = (root_thread_stack_low - 
             (count - 1) * stack_size) & PAGE_ALIGN_MASK;
 
-    //lprintf("old_page_base: %x", (unsigned)old_page_base);
-    //lprintf("new_page_base: %x", (unsigned)new_page_base);
-
     // Depending on how kernel schedules, a thread that's created later may
     // call this function earlier than one that's created earlier
     int num_pages = (old_page_base - new_page_base)/PAGE_SIZE;
 
-    //lprintf("num_pages: %d", num_pages);
-
     // Allocate highest page of this stack region, fail is normal since this 
     // page may have been already been allocated 
-    if(new_pages((void *)old_page_base, PAGE_SIZE) != 0) {
-            // Should check return value
-            // New pages failed, the page may have been already allocated
+    int ret = new_pages((void *)old_page_base, PAGE_SIZE);
+    if(ret && ret != ERROR_NEW_PAGES_OVERLAP_EXISTING_REGION) {
+        return ret;
     } 
 
     if(num_pages > 1) {
         // Allocate middle pages, shouldn't fail since middle pages of this
         // stack region don't overlap with other threads' stack regions
-        if(new_pages((void *)(new_page_base + PAGE_SIZE), 
-                    (num_pages - 1) * PAGE_SIZE) != 0) {
-            lprintf("New page failed, something's wrong");
-            return 3;
+        ret = new_pages((void *)(new_page_base + PAGE_SIZE), 
+                    (num_pages - 1) * PAGE_SIZE);
+        if(ret) {
+            return ret;
         }    
     }
 
     if(old_page_base != new_page_base) {
         // Allocate lowest page, fail is normal since the page may have
         // already been allocated
-        if(new_pages((void *)new_page_base, PAGE_SIZE) != 0) {
-                // Should check return value
-                // New pages failed, the page may have been already allocated
+        ret = new_pages((void *)new_page_base, PAGE_SIZE);
+        if(ret && ret != ERROR_NEW_PAGES_OVERLAP_EXISTING_REGION) {
+            return ret;
         } 
     }
 

@@ -7,18 +7,6 @@
 
 #include <lib_public.h>
 
-/**
- * @brief Page size alignment mask 
- *
- * If PAGE_SIZE is 4096, i.e., 0x00001000, then PAGE_ALIGN_MASK 
- * will be 0xfffff000 
- */
-#define PAGE_ALIGN_MASK ((unsigned int) ~((unsigned int) (PAGE_SIZE-1)))
-
-/**
- * @brief Alignment requirement of stack top addr
- */
-#define ALIGNMENT 4
 
 
 int thr_lib_helper_init(unsigned int size);
