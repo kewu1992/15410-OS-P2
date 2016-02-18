@@ -13,7 +13,7 @@ typedef struct deque{
     node_t *tail;
 } deque_t;
 
-void queue_init(deque_t *deque);
+int queue_init(deque_t *deque);
 void enqueue(deque_t *deque, node_t* element);
 node_t* dequeue(deque_t *deque);
 int queue_destroy(deque_t *deque);

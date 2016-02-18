@@ -52,4 +52,6 @@ int thr_hashtableexit_init();
 
 int thr_exitstatus_hashfunc(void *key);
 
+void asm_thr_exit(void *inner_lock);
+
 #endif /* THR_INTERNALS_H */

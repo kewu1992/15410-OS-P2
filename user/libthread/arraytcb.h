@@ -17,7 +17,7 @@ typedef struct {
 
 int arraytcb_init(int size);
 
-int arraytcb_insert_thread(int tid, int *is_newstack);
+int arraytcb_insert_thread(int tid, int *is_newstack, mutex_t *mutex_arraytcb);
 
 int arraytcb_delete_thread(int index);
 

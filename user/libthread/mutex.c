@@ -11,8 +11,8 @@
 int mutex_init(mutex_t *mp) {
     mp->lock_available = 1; 
     SPINLOCK_INIT(&mp->inner_lock);
-    queue_init(&mp->deque);
-    return 0;
+    int is_error = queue_init(&mp->deque);
+    return is_error ? -1 : 0;
 }
 
 void mutex_destroy(mutex_t *mp) {
@@ -32,6 +32,9 @@ void mutex_lock(mutex_t *mp) {
         SPINLOCK_UNLOCK(&mp->inner_lock);
     } else {
         node_t *tmp = malloc(sizeof(node_t));
+        if (!tmp) {
+            lprintf("QAQ");
+        }
         tmp->ktid = thr_getktid();
         tmp->reject = 0;
 

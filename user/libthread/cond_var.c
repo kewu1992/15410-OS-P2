@@ -7,9 +7,11 @@
 #include <thr_internals.h>
 
 int cond_init(cond_t *cv) {
-    mutex_init(&cv->mutex);
-    queue_init(&cv->deque);
-    return 0;
+    int is_error = 0;
+    is_error |= mutex_init(&cv->mutex);
+    is_error |= queue_init(&cv->deque);
+    
+    return is_error ? -1 : 0;
 }
 
 void cond_destroy(cond_t *cv) {
@@ -21,6 +23,9 @@ void cond_destroy(cond_t *cv) {
 
 void cond_wait(cond_t *cv, mutex_t *mp) {
     node_t *tmp = malloc(sizeof(node_t));
+    if (!tmp) {
+        //lprintf("QAQ");
+    }
     tmp->ktid = thr_getktid();
     tmp->reject = 0;
 

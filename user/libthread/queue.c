@@ -6,13 +6,16 @@
 #include <stdlib.h>
 #include <queue.h>
 
-void queue_init(deque_t *deque){
+int queue_init(deque_t *deque){
     deque->head = malloc(sizeof(node_t));
     deque->tail = malloc(sizeof(node_t));
+    if (!deque->head || !deque->tail)
+        return -1;
     deque->head->next = deque->tail;
     deque->head->prev = NULL;
     deque->tail->prev = deque->head;
     deque->tail->next = NULL;
+    return 0;
 }
 
 void enqueue(deque_t *deque, node_t* element) {
