@@ -24,6 +24,8 @@
  */
 int hashtable_init(hashtable_t *table) {
     table->array = malloc(sizeof(hashnode_t) * table->size);
+    if (!table->array)
+        return -1;
     int i;
     for (i = 0; i < table->size; i++)
         table->array[i].next = NULL;
@@ -37,12 +39,14 @@ int hashtable_init(hashtable_t *table) {
  *  @param key Key of <key, value> pair
  *  @param value Value of <key, value> pair
  *
- *  @return Void
+ *  @return On success return 0, on error return -1
  */
-void hashtable_put(hashtable_t *table, void* key, void* value) {
+int hashtable_put(hashtable_t *table, void* key, void* value) {
     int index = table->func(key);
 
     hashnode_t *hp = malloc(sizeof(hashnode_t));
+    if (!hp)
+        return -1;
     hp->key = key;
     hp->value = value;
 
@@ -50,6 +54,8 @@ void hashtable_put(hashtable_t *table, void* key, void* value) {
     hp->next = table->array[index].next;
     table->array[index].next = hp;
     mutex_unlock(&table->lock);
+
+    return 0;
 }
 
 

@@ -99,7 +99,7 @@ STUDENTTESTS = wk_test_thrcreate small_test my_largetest
 ###########################################################################
 # Object files for your thread library
 ###########################################################################
-THREAD_OBJS = malloc.o panic.o asm_xchg.o mutex.o queue.o thr_create_kernel.o thr_lib.o thr_lib_helper.o arraytcb.o cond_var.o asm_get_esp.o hashtable.o sem.o rwlock.o
+THREAD_OBJS = malloc.o panic.o asm_xchg.o mutex.o queue.o thr_create_kernel.o thr_lib.o thr_lib_helper.o arraytcb.o cond_var.o asm_get_esp.o hashtable.o sem.o rwlock.o asm_thr_exit.o
 
 
 # Thread Group Library Support.
