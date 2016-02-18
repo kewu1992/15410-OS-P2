@@ -20,6 +20,9 @@
 #define INIT_THR_NUM 32
 #define EXIT_HASH_SIZE 1021
 
+#define PAGE_REMOVE_INFO_SIZE 6 
+static int page_remove_info[PAGE_REMOVE_INFO_SIZE];
+
 /** @brief The amount of stack space available for each thread */
 static unsigned int stack_size;
 
@@ -223,9 +226,14 @@ void thr_exit(void *status) {
         make_runnable(tmp_ktid);
     }
 
+    uint32_t ret = get_pages_to_remove(index, page_remove_info);
+    if(ret < 0) {
+        return;
+    }
+
     // will call SPINLOCK_UNLOCK(&mutex_arraytcb->inner_lock) and vanish()
     // in asm_thr_exit() to avoid using stack
-    asm_thr_exit(&mutex_arraytcb.inner_lock);
+    //asm_thr_exit(&mutex_arraytcb.inner_lock, page_remove_info);
 
 
     lprintf("should never reach here");

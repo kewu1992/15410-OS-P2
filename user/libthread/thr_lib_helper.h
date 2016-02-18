@@ -8,8 +8,9 @@
 #include <lib_public.h>
 
 
-
 int thr_lib_helper_init(unsigned int size);
+
+uint32_t get_pages_to_remove(int index, int *page_remove_info);
 
 uint32_t get_new_stack_top(int count);
 

@@ -82,7 +82,7 @@ uint32_t get_new_stack_top(int index) {
         // Allocate middle pages, shouldn't fail since middle pages of this
         // stack region don't overlap with other threads' stack regions
         ret = new_pages((void *)(new_page_base + PAGE_SIZE), 
-                    (num_pages - 1) * PAGE_SIZE);
+                (num_pages - 1) * PAGE_SIZE);
         if(ret) {
             return ret;
         }    
@@ -108,6 +108,58 @@ uint32_t get_new_stack_top(int index) {
     return new_stack_top;
 }
 
+// page_remove_indo[0] = base1, [1] = is_remove, [2]
+uint32_t get_pages_to_remove(int index, int *page_remove_info) {
+
+    if(index == 0) {
+        page_remove_info[1] = 0;
+        page_remove_info[3] = 0;
+        page_remove_info[5] = 0;
+        return 0;
+    }
+
+    uint32_t new_page_base = (root_thread_stack_low - 
+            index * stack_size) & PAGE_ALIGN_MASK;
+
+    uint32_t old_page_base = (root_thread_stack_low - 
+            (index - 1) * stack_size) & PAGE_ALIGN_MASK;
+
+    int num_pages = (old_page_base - new_page_base)/PAGE_SIZE;
+
+    // Highest page
+    tcb_t *thr = arraytcb_get_thread(index - 1);
+    if(thr) {
+        page_remove_info[1] = 0;
+    } else {
+        page_remove_info[0] = old_page_base;
+        page_remove_info[1] = 1;
+    }
+
+    // Middle pages
+    if(num_pages > 1) {
+        page_remove_info[2] = new_page_base + PAGE_SIZE;
+        page_remove_info[3] = 1;
+    } else {
+        page_remove_info[3] = 0;
+    }
+
+    // Lowest page
+    if(old_page_base != new_page_base) {
+        thr = arraytcb_get_thread(index + 1);
+        if(thr) {
+            page_remove_info[5] = 0;
+        } else {
+            page_remove_info[4] = new_page_base;
+            page_remove_info[5] = 1;
+        }
+    } else {
+        page_remove_info[5] = 0;
+    }
+
+    return 0;
+}
+
+
 /** @brief Get stack high given stack position index 
  *  
  *  @param index Stack position index
@@ -119,7 +171,7 @@ uint32_t get_new_stack_top(int index) {
 uint32_t get_stack_high(int index) {
 
     if(index == 0) {
-         return root_thread_stack_high;
+        return root_thread_stack_high;
     }
 
     uint32_t cur_stack_high = root_thread_stack_low - 
@@ -137,7 +189,7 @@ uint32_t get_stack_high(int index) {
  *  @return Stack position index of the current thread
  */
 int get_stack_position_index() {
-    
+
     uint32_t esp = asm_get_esp();
 
     if(esp <= root_thread_stack_high && esp >= root_thread_stack_low) {
