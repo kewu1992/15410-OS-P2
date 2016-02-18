@@ -84,7 +84,7 @@ static void double_array() {
  *          
  *
  */
-int arraytcb_insert_thread(int tid, int *is_newstack, mutex_t *mutex_arraytcb) {
+int arraytcb_insert_thread(int tid, mutex_t *mutex_arraytcb) {
     tcb_t* new_thread = malloc(sizeof(tcb_t));
     if (!new_thread)
         return -1;
@@ -103,7 +103,6 @@ int arraytcb_insert_thread(int tid, int *is_newstack, mutex_t *mutex_arraytcb) {
         mutex_unlock(mutex_arraytcb);
 
         free(tmp);
-        *is_newstack = 0;
         return index;
     } else {
         if (array->cursize == array->maxsize)
@@ -114,7 +113,6 @@ int arraytcb_insert_thread(int tid, int *is_newstack, mutex_t *mutex_arraytcb) {
         
         mutex_unlock(mutex_arraytcb);
 
-        *is_newstack = 1;
         return index;
     }
 }
@@ -159,7 +157,7 @@ int arraytcb_delete_thread(int index) {
  *
  */
 tcb_t* arraytcb_get_thread(int index) {
-    if (index >= array->cursize)
+    if (index < 0 || index >= array->cursize)
         return NULL;
     else
         return array->data[index];
