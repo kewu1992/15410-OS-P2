@@ -62,8 +62,7 @@ int thr_init(unsigned int size) {
     isError |= thr_hashtableexit_init();
 
     // insert master thread to arraytcb
-    int tmp;
-    arraytcb_insert_thread(0, &tmp, &mutex_arraytcb);
+    arraytcb_insert_thread(0, &mutex_arraytcb);
     // set ktid for master thread
     arraytcb_set_ktid(0, gettid());
 
@@ -87,20 +86,15 @@ int thr_create(void *(*func)(void *), void *args) {
     mutex_unlock(&mutex_thread_count);
 
     uint32_t stack_addr = 0;
-    int index, is_newstack;
+    
+    int index = arraytcb_insert_thread(tid, &mutex_arraytcb);
 
-    index = arraytcb_insert_thread(tid, &is_newstack, &mutex_arraytcb);
-
-    if (!is_newstack) {
-        stack_addr = get_stack_high(index);
-    } else {
-        // allocate a stack with stack_size for new thread
-        if ((stack_addr = (uint32_t)get_new_stack_top(index)) 
-                % ALIGNMENT != 0){
-            // return value can not be divided by ALIGNMENT, it is an error 
-            lprintf("%d: get_new_stack_top() error", tid);
-            return -1;
-        }
+    // allocate a stack with stack_size for new thread
+    if ((stack_addr = (uint32_t)get_new_stack_top(index)) 
+            % ALIGNMENT != 0){
+        // return value can not be divided by ALIGNMENT, it is an error 
+        lprintf("%d: get_new_stack_top() error", tid);
+        return -1;
     }
 
     // "push" argument to new stack  
