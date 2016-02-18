@@ -31,27 +31,41 @@ int thr_lib_helper_init(unsigned int size) {
  *  Compute the stack region for a new thread, allocate new pages
  *  if necessary, and get a stack top that meets alignment requirement 
  *
- *  @param count The number of new threads has ever been created
- *  (master thread is #0)
+ *  @param index The index of thread stacks
+ *  (The highest stack is #0)
  *
  *  @return Stack top for a new thread
  *
  */
-uint32_t get_new_stack_top(int count) {
+uint32_t get_new_stack_top(int index) {
 
-    if(count == 1) {
-        root_thread_stack_low = get_root_thread_stack_low();
-        if(root_thread_stack_low % ALIGNMENT) {
-            return ERROR_MISALIGNMENT;
+    // When the first new thread is to be created, fixate the root thread 
+    // stack low
+    if(index == 1) {
+        if(root_thread_stack_low == 0) {
+            root_thread_stack_low = get_root_thread_stack_low();
+            if(root_thread_stack_low % ALIGNMENT) {
+                return ERROR_MISALIGNMENT;
+            }
         }
     }
 
-    // Assume pages on the stack grow down continuouly
+    // Allocate stack space for new threads
+
+    // Stack space allocated for root thread will be preserved until task 
+    // vanishes, since it's allocated by kernel and it may be the result
+    // of one or more new_pages() call, so that without this information
+    // it would be hard to call remove_pages() correctly. Future thread
+    // that is put on the highest stack already has space allocated.
+    if(index == 0) {
+        return root_thread_stack_low;
+    }
+
     uint32_t new_page_base = (root_thread_stack_low - 
-            count * stack_size) & PAGE_ALIGN_MASK;
+            index * stack_size) & PAGE_ALIGN_MASK;
 
     uint32_t old_page_base = (root_thread_stack_low - 
-            (count - 1) * stack_size) & PAGE_ALIGN_MASK;
+            (index - 1) * stack_size) & PAGE_ALIGN_MASK;
 
     // Depending on how kernel schedules, a thread that's created later may
     // call this function earlier than one that's created earlier
@@ -86,7 +100,7 @@ uint32_t get_new_stack_top(int count) {
     // The 1st available new stack position is last thread's stack low - 1
     // Keep decrementing until it aligns with 4
     uint32_t new_stack_top = root_thread_stack_low - 
-        (count - 1) * stack_size - 1;
+        (index - 1) * stack_size - 1;
     while(new_stack_top % ALIGNMENT != 0) {
         new_stack_top--;
     }
