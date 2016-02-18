@@ -227,7 +227,7 @@ void thr_exit(void *status) {
 
     // will call SPINLOCK_UNLOCK(&mutex_arraytcb->inner_lock) and vanish()
     // in asm_thr_exit() to avoid using stack
-    //asm_thr_exit(&mutex_arraytcb.inner_lock, page_remove_info);
+    asm_thr_exit(&mutex_arraytcb.inner_lock, page_remove_info);
 
 
     lprintf("should never reach here");
