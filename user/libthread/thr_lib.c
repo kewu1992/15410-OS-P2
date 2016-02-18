@@ -60,7 +60,7 @@ int thr_init(unsigned int size) {
 
     // insert master thread to arraytcb
     int tmp;
-    arraytcb_insert_thread(0, &tmp);
+    arraytcb_insert_thread(0, &tmp, &mutex_arraytcb);
     // set ktid for master thread
     arraytcb_set_ktid(0, gettid());
 
@@ -86,9 +86,7 @@ int thr_create(void *(*func)(void *), void *args) {
     uint32_t stack_addr = 0;
     int index, is_newstack;
 
-    mutex_lock(&mutex_arraytcb);
-    index = arraytcb_insert_thread(tid, &is_newstack);
-    mutex_unlock(&mutex_arraytcb);
+    index = arraytcb_insert_thread(tid, &is_newstack, &mutex_arraytcb);
 
     if (!is_newstack) {
         stack_addr = get_stack_high(index);
@@ -194,16 +192,42 @@ void thr_exit(void *status) {
     // Thread is either running or someone has called join on it
     if(thr->state == JOINED) {
         // Signal the thread who called join
-        // lprintf("thread %d(%d) cond_signal", thr->tid, thr->ktid);
+        //lprintf("thread %d(%d) cond_signal", thr->tid, thr->ktid);
         cond_signal(&thr->cond_var);
     } 
 
     // release resource
     arraytcb_delete_thread(index);
 
-    mutex_unlock(&mutex_arraytcb);
 
-    vanish();
+
+    /* The following code is executing 
+     *      mutex_unlock(&mutex_arraytcb);
+     *      vanish();
+     * However, instead of calling these two fucntions directly, 
+     * the program will call them "manually" with assembly to avoid
+     * using stack after mutex is unlocked. Because after mutex is 
+     * unlocked, other threads may use the stack of the exitting thread
+     * immediately. 
+     */
+
+    // call mutex_unlock(mutex_arraytcb) manually to avoid "unlocking"
+    SPINLOCK_LOCK(&mutex_arraytcb.inner_lock);
+
+    node_t *tmpnode = dequeue(&mutex_arraytcb.deque);
+
+    if (!tmpnode) {
+        mutex_arraytcb.lock_available = 1;
+    } else {
+        int tmp_ktid = tmpnode->ktid;
+        tmpnode->reject = 1;
+        make_runnable(tmp_ktid);
+    }
+
+    // will call SPINLOCK_UNLOCK(&mutex_arraytcb->inner_lock) and vanish()
+    // in asm_thr_exit() to avoid using stack
+    asm_thr_exit(&mutex_arraytcb.inner_lock);
+
 
     lprintf("should never reach here");
     return;
@@ -211,9 +235,6 @@ void thr_exit(void *status) {
 }
 
 int thr_getid() {
-
-    //mutex_lock(&mutex_arraytcb);
-
     // Get stack position index of the current thread
     int index = get_stack_position_index();
 
@@ -221,11 +242,9 @@ int thr_getid() {
     if(thr == NULL) {
         // Something's wrong, debug
         lprintf("getid fails");
-        //mutex_unlock(&mutex_arraytcb);
         return -1;
     }
 
-    //mutex_unlock(&mutex_arraytcb);
     return thr->tid;
 }
 
@@ -237,6 +256,7 @@ int thr_getktid() {
     if(thr == NULL) {
         // Something's wrong, debug
         lprintf("gektid fails");
+        MAGIC_BREAK;
         return -1;
     }
 

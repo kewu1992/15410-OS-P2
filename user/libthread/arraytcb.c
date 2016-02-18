@@ -17,8 +17,9 @@
 #include <stdlib.h>
 
 #include <cond.h>
+#include <mutex.h>
 #include <arraytcb.h>
-
+ 
 typedef struct availnode_s {
     struct availnode_s *next;
     int index;
@@ -41,11 +42,15 @@ int arraytcb_init(int size) {
     if (size <= 0)
         return -1;
     array = malloc(sizeof(struct arraytcb_s));
+    if (!array)
+        return -1;
     array->maxsize = size;
     array->cursize = 0;
     array->data = calloc(size, sizeof(tcb_t*));
 
     array->avail_list = malloc(sizeof(availnode_t));
+    if (!array->avail_list)
+        return -1;
     array->avail_list->next = NULL;
     return 0;
 }
@@ -79,38 +84,38 @@ static void double_array() {
  *          
  *
  */
-int arraytcb_insert_thread(int tid, int *is_newstack) {
+int arraytcb_insert_thread(int tid, int *is_newstack, mutex_t *mutex_arraytcb) {
     tcb_t* new_thread = malloc(sizeof(tcb_t));
+    if (!new_thread)
+        return -1;
     new_thread->tid = tid;
     new_thread->state = RUNNING;
     cond_init(&new_thread->cond_var);
 
-    /*
-    int i;
-    for (i = 0; i < array->cursize; i++)
-        if (!array->data[i]) {
-            array->data[i] = new_thread;
-            *is_newstack = 0;
-            return i;
-        }
-    */
+    mutex_lock(mutex_arraytcb);
 
     if (array->avail_list->next) {
         availnode_t *tmp = array->avail_list->next;
         array->avail_list->next = array->avail_list->next->next;
         int index = tmp->index;
-        free(tmp);
-        
         array->data[index] = new_thread;
+        
+        mutex_unlock(mutex_arraytcb);
+
+        free(tmp);
         *is_newstack = 0;
         return index;
     } else {
         if (array->cursize == array->maxsize)
             double_array(array);
 
-        array->data[array->cursize] = new_thread;
+        int index = array->cursize++;
+        array->data[index] = new_thread;
+        
+        mutex_unlock(mutex_arraytcb);
+
         *is_newstack = 1;
-        return array->cursize++;
+        return index;
     }
 }
 
@@ -126,17 +131,24 @@ int arraytcb_insert_thread(int tid, int *is_newstack) {
  */
 int arraytcb_delete_thread(int index) {
     if (array->data[index]){
-        cond_destroy(&array->data[index]->cond_var);
-        free(array->data[index]);
+        tcb_t *thr = array->data[index];
         array->data[index] = NULL;
 
+        cond_destroy(&thr->cond_var);
+        free(thr);
+
         availnode_t *tmp = malloc(sizeof(availnode_t));
+        if (!tmp)
+            return -1;
         tmp->index = index;
+
         tmp->next = array->avail_list->next;
         array->avail_list->next = tmp;
+
         return 0;
-    } else
+    } else{
         return -1;
+    }
 }
 
 /** @brief Get the tcb structure given an array index
@@ -174,7 +186,6 @@ int arraytcb_set_ktid(int index, int ktid) {
         return -1;
 
     array->data[index]->ktid = ktid;
-    
     return 0;
 }
 
