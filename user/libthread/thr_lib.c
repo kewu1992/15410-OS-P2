@@ -149,7 +149,18 @@ int thr_create(void *(*func)(void *), void *args) {
     return tid;
 }
 
-
+/** @brief Join and clean up a thread
+ *  
+ *  This function joins a thread, if the thread is running, block
+ *  and wait for it; else, look up its return status in the exit 
+ *  hashtable and clean up the hashtable entry.
+ * 
+ *  @param tid The thread id (assigned by our thread lib) to join on
+ *  @param statusp The place to store return status of the thread to join 
+ *
+ *  @return 0 on success; -1 on error
+ *
+ */
 int thr_join(int tid, void **statusp) {
     // check if tid has been created 
     mutex_lock(&mutex_thread_count);
@@ -171,7 +182,6 @@ int thr_join(int tid, void **statusp) {
         case RUNNING:
             // tid is still running, block and waiting for it
             thr->state = JOINED;
-            //lprintf("tid %d(%d) ---> JOINED", thr->tid, thr->ktid);
             cond_wait(&thr->cond_var, &mutex_arraytcb);
             break;
         default:
@@ -200,6 +210,16 @@ int thr_join(int tid, void **statusp) {
    
 }
 
+/** @brief Exits the thread with exit status
+ *  
+ *  Report exit status in exit hashtable, delete the its tcb, 
+ *  release its stack space and call vanish().
+ * 
+ *  @param status The return status
+ *
+ *  @return void
+ *
+ */
 void thr_exit(void *status) {
 
     // Find current thread's stack position index
@@ -265,6 +285,13 @@ void thr_exit(void *status) {
 
 }
 
+/** @brief Get calling thread's thread id assigned by the thread lib
+ *  
+ *  Look up tid in arraytcb
+ *
+ *  @return tid on success; -1 on error
+ *
+ */
 int thr_getid() {
     // Get stack position index of the current thread
     int index = get_stack_position_index();
@@ -277,6 +304,13 @@ int thr_getid() {
     return thr->tid;
 }
 
+/** @brief Get calling thread's thread id assigned by the kernel
+ *  
+ *  Look up ktid in arraytcb
+ *
+ *  @return ktid on success; -1 on error
+ *
+ */
 int thr_getktid() {
     // Get stack position index of the current thread
     int index = get_stack_position_index();
@@ -289,6 +323,14 @@ int thr_getktid() {
     return thr->ktid;
 }
 
+/** @brief Defers execution of the invoking thread
+ *
+ *  Yield in favor of tid. If tid is -1, then yield to some unspecified thread
+ *
+ *  @param tid Thread id (assigned by thread lib) of the thread to yield to.
+ *  @return 0 on success; -1 on error
+ *
+ */
 int thr_yield(int tid) {
     if (tid == -1)
         return yield(-1);
