@@ -108,43 +108,6 @@ uint32_t get_new_stack_top(int index) {
         } 
     }
 
-/*
-    uint32_t new_page_base = (root_thread_stack_low - 
-            index * stack_size) & PAGE_ALIGN_MASK;
-
-    uint32_t old_page_base = (root_thread_stack_low - 
-            (index - 1) * stack_size) & PAGE_ALIGN_MASK;
-
-    // Depending on how kernel schedules, a thread that's created later may
-    // call this function earlier than one that's created earlier
-    int num_pages = (old_page_base - new_page_base)/PAGE_SIZE;
-*/
-    // Allocate highest page of this stack region, fail is normal since this 
-    // page may have been already been allocated 
-    /*int ret = new_pages((void *)old_page_base, PAGE_SIZE);
-    if(ret && ret != ERROR_NEW_PAGES_OVERLAP_EXISTING_REGION) {
-        return ret;
-    } 
-
-    if(num_pages > 1) {
-        // Allocate middle pages, shouldn't fail since middle pages of this
-        // stack region don't overlap with other threads' stack regions
-        ret = new_pages((void *)(new_page_base + PAGE_SIZE), 
-                (num_pages - 1) * PAGE_SIZE);
-        if(ret) {
-            return ret;
-        }    
-    }
-
-    if(old_page_base != new_page_base) {
-        // Allocate lowest page, fail is normal since the page may have
-        // already been allocated
-        ret = new_pages((void *)new_page_base, PAGE_SIZE);
-        if(ret && ret != ERROR_NEW_PAGES_OVERLAP_EXISTING_REGION) {
-            return ret;
-        } 
-    }
-*/
     // The 1st available new stack position is last thread's stack low - 1
     // Keep decrementing until it aligns with 4
     uint32_t new_stack_top = root_thread_stack_low - 
@@ -152,8 +115,6 @@ uint32_t get_new_stack_top(int index) {
     while(new_stack_top % ALIGNMENT != 0) {
         new_stack_top--;
     }
-
-        
 
     return new_stack_top;
 }

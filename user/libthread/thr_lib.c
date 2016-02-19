@@ -52,24 +52,24 @@ int thr_init(unsigned int size) {
     // At first, already has a master thread
     thread_count = 1;
 
-    int isError = 0;
+    int is_error = 0;
 
-    isError |= mutex_init(&mutex_thread_count);
+    is_error |= mutex_init(&mutex_thread_count);
 
-    isError |= mutex_init(&mutex_arraytcb);
+    is_error |= mutex_init(&mutex_arraytcb);
 
-    isError |= arraytcb_init(INIT_THR_NUM);
+    is_error |= arraytcb_init(INIT_THR_NUM);
 
-    isError |= thr_lib_helper_init(stack_size);
+    is_error |= thr_lib_helper_init(stack_size);
 
-    isError |= thr_hashtableexit_init();
+    is_error |= thr_hashtableexit_init();
 
     // insert master thread to arraytcb
-    arraytcb_insert_thread(0, &mutex_arraytcb);
+    is_error |= arraytcb_insert_thread(0, &mutex_arraytcb);
     // set ktid for master thread
-    arraytcb_set_ktid(0, gettid());
+    is_error |= arraytcb_set_ktid(0, gettid());
 
-    return isError ? -1 : 0;
+    return is_error ? -1 : 0;
 }
 
 /** @brief Creates a new thread to run func(args)
@@ -91,11 +91,13 @@ int thr_create(void *(*func)(void *), void *args) {
     uint32_t stack_addr = 0;
     
     int index = arraytcb_insert_thread(tid, &mutex_arraytcb);
+    if(index == -1) return -1;
 
     // allocate a stack with stack_size for new thread
     if ((stack_addr = (uint32_t)get_new_stack_top(index)) 
             % ALIGNMENT != 0){
         // return value can not be divided by ALIGNMENT, it is an error 
+        printf("%d: get_new_stack_top() error", tid);
         lprintf("%d: get_new_stack_top() error", tid);
         return -1;
     }
@@ -112,8 +114,9 @@ int thr_create(void *(*func)(void *), void *args) {
     // its stack address (esp)
     int child_ktid;
     if ((child_ktid = thr_create_kernel(func, (void*)(stack_addr-12))) < 0) {
+        printf("%d: thr_create_kernel() error", tid);
         lprintf("%d: thr_create_kernel() error", tid);
-        return -2;
+        return -1;
     }
 
     mutex_lock(&mutex_arraytcb);
@@ -143,14 +146,21 @@ int thr_join(int tid, void **statusp) {
         case JOINED:
             // tid has been joined by other thread
             mutex_unlock(&mutex_arraytcb);
-            return -2;
+            return -1;
         case RUNNING:
             // tid is still running, block and waiting for it
             thr->state = JOINED;
             //lprintf("tid %d(%d) ---> JOINED", thr->tid, thr->ktid);
             cond_wait(&thr->cond_var, &mutex_arraytcb);
+            break;
+        default:
+            printf("tcb state error");
+            lprintf("tcb state error");
+            return -1;;
         } 
-    } 
+    } else {
+        return -1;
+    }
 
     // tid has exitted
     mutex_unlock(&mutex_arraytcb);
@@ -162,11 +172,13 @@ int thr_join(int tid, void **statusp) {
     else
         hashtable_remove(&hash_exit, (void*)tid, &is_find);
 
-    if (is_find)
+    if (is_find) {
         return 0;
-    else
-        // can not find exit status of tid in hash table, something wrong
-        return -3;
+    } else {
+        printf("Can not find exit status of tid in hash table");
+        lprintf("Can not find exit status of tid in hash table");
+        return -1;
+    }
    
 }
 
@@ -178,10 +190,10 @@ void thr_exit(void *status) {
     tcb_t *thr = arraytcb_get_thread(index);
     if(thr == NULL) {
         // Something's wrong
+        printf("Can not find tcb, something's wrong");
+        lprintf("Can not find tcb, something's wrong");
         return;
     }
-
-    //lprintf("thread %d(%d) start exiting", thr->tid, thr->ktid);
 
     // if the exitting thread is master thread, also set task exit status
     if (thr->tid == 0) {
@@ -196,12 +208,15 @@ void thr_exit(void *status) {
     // Thread is either running or someone has called join on it
     if(thr->state == JOINED) {
         // Signal the thread who called join
-        //lprintf("thread %d(%d) cond_signal", thr->tid, thr->ktid);
         cond_signal(&thr->cond_var);
     } 
 
     // release resource
-    arraytcb_delete_thread(index);
+    if(arraytcb_delete_thread(index) < 0) {
+        printf("arraytcb_delete_thread failed");
+        lprintf("arraytcb_delete_thread failed");
+        return;
+    }
 
 
 
@@ -237,7 +252,6 @@ void thr_exit(void *status) {
     // in asm_thr_exit() to avoid using stack
     asm_thr_exit(&mutex_arraytcb.inner_lock, page_remove_info);
 
-
     lprintf("should never reach here");
     return;
 
@@ -249,8 +263,6 @@ int thr_getid() {
 
     tcb_t *thr = arraytcb_get_thread(index);
     if(thr == NULL) {
-        // Something's wrong, debug
-        lprintf("getid fails");
         return -1;
     }
 
@@ -263,9 +275,6 @@ int thr_getktid() {
 
     tcb_t *thr = arraytcb_get_thread(index);
     if(thr == NULL) {
-        // Something's wrong, debug
-        lprintf("gektid fails");
-        MAGIC_BREAK;
         return -1;
     }
 

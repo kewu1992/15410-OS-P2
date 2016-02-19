@@ -168,7 +168,7 @@ tcb_t* arraytcb_get_thread(int index) {
  *  @param tid The tid of the thread that need to find its index
  *
  *  @return On success return the index of the thread, on error return
- *          -1 (can not find the thread in arraytcb)
+ *          NULL (can not find the thread in arraytcb)
  *
  */
 tcb_t* arraytcb_find_thread(int tid) {
