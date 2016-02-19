@@ -1,6 +1,8 @@
 #include <stdint.h>
 #include <thr_lib_helper.h>
 #include <arraytcb.h>
+#include <string.h>
+#include <thr_internals.h>
 
 
 /**
@@ -15,6 +17,8 @@ static uint32_t root_thread_stack_high;
 
 /** @brief The amount of stack space available for each thread */
 static unsigned int stack_size;
+
+extern void *ebp__main;
 
 int thr_lib_helper_init(unsigned int size) {
 
@@ -314,5 +318,28 @@ int get_stack_position_index() {
         return 1 + (root_thread_stack_low - esp - 1) / stack_size;
     }
 
+}
+
+/** @brief get old %ebp value based on current %ebp
+ *
+ *  @param ebp Value of current %ebp
+ *
+ *  @return Value of old %ebp
+ */
+void* get_last_ebp(void* ebp) {
+    unsigned long last_ebp = *((unsigned long*) ebp);
+    return (void*) last_ebp;
+}
+
+void set_rootthr_retaddr(){
+    // trace back, until find main() and __main()
+    void* ebp = (void*)asm_get_ebp();
+    void* last_ebp = get_last_ebp(ebp);
+    while (last_ebp != ebp__main) {
+        ebp = last_ebp;
+        last_ebp = get_last_ebp(ebp);
+    }
+    void *thr_ret2exit_addr = thr_ret2exit;
+    memcpy((void*)((uint32_t)ebp + 4), &thr_ret2exit_addr, 4);
 }
 
