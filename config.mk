@@ -85,7 +85,7 @@ UPDATE_METHOD = afs
 # A list of the test programs you want compiled in from the 410user/progs
 # directory
 #
-410TESTS = cvar_test mutex_destroy_test misbehave_wrap misbehave cyclone agility_drill join_specific_test multitest paraguay juggle racer largetest rwlock_downgrade_read_test stack_test1 wild_test1 switzerland mandelbrot
+410TESTS = cyclone cvar_test agility_drill mandelbrot multitest mutex_destroy_test nibbles paraguay racer rwlock_downgrade_read_test stack_test1 startle switzerland thr_exit_join wild_test1 misbehave misbehave_wrap
 
 ###########################################################################
 # Test programs you have written which you wish to run
@@ -94,7 +94,7 @@ UPDATE_METHOD = afs
 # directory
 #
 
-STUDENTTESTS = wk_test_thrcreate small_test wk_test_print large
+STUDENTTESTS = wk_test_thrcreate small_test wk_test_print
 
 ###########################################################################
 # Object files for your thread library

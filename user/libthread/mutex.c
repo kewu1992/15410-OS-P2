@@ -42,7 +42,7 @@ void mutex_lock(mutex_t *mp) {
             
         SPINLOCK_UNLOCK(&mp->inner_lock);
         while(!tmp->reject) {
-            deschedule(&tmp->reject);
+            yield(-1);
         }
 
         free(tmp);
@@ -56,10 +56,11 @@ void mutex_unlock(mutex_t *mp) {
 
     if (!tmp) {
         mp->lock_available = 1;
+        SPINLOCK_UNLOCK(&mp->inner_lock);
     } else {
         int tmp_ktid = tmp->ktid;
         tmp->reject = 1;
-        make_runnable(tmp_ktid);
+        SPINLOCK_UNLOCK(&mp->inner_lock);
+        yield(tmp_ktid);
     }
-    SPINLOCK_UNLOCK(&mp->inner_lock);
 }
