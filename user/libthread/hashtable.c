@@ -15,6 +15,8 @@
 
 #include <stdlib.h>
 #include <hashtable.h>
+#include <stdio.h>
+#include <simics.h>
 
 /** @brief Initialize a hashtable data structure
  *  
@@ -39,14 +41,18 @@ int hashtable_init(hashtable_t *table) {
  *  @param key Key of <key, value> pair
  *  @param value Value of <key, value> pair
  *
- *  @return On success return 0, on error return -1
+ *  @return Void
  */
-int hashtable_put(hashtable_t *table, void* key, void* value) {
+void hashtable_put(hashtable_t *table, void* key, void* value) {
     int index = table->func(key);
 
     hashnode_t *hp = malloc(sizeof(hashnode_t));
-    if (!hp)
-        return -1;
+    while (!hp) {
+        lprintf("malloc failed, will try again...");
+        printf("malloc failed, will try again...\n");
+        yield(-1);
+        hp = malloc(sizeof(hashnode_t));
+    }
     hp->key = key;
     hp->value = value;
 
@@ -54,8 +60,6 @@ int hashtable_put(hashtable_t *table, void* key, void* value) {
     hp->next = table->array[index].next;
     table->array[index].next = hp;
     mutex_unlock(&table->lock);
-
-    return 0;
 }
 
 

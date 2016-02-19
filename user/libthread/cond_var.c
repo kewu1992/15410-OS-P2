@@ -4,7 +4,9 @@
 #include <cond_type.h>
 #include <stdlib.h>
 #include <queue.h>
+#include <stdio.h>
 #include <thr_internals.h>
+#include <simics.h>
 
 int cond_init(cond_t *cv) {
     int is_error = 0;
@@ -36,7 +38,7 @@ void cond_wait(cond_t *cv, mutex_t *mp) {
         lprintf("malloc failed, will try again...");
         printf("malloc failed, will try again...\n");
         yield(-1);
-        tmp = malloc(sizeof(node_t))
+        tmp = malloc(sizeof(node_t));
     }
     tmp->ktid = thr_getktid();
     tmp->reject = 0;
@@ -90,7 +92,7 @@ void cond_broadcast(cond_t *cv) {
         // try to singal a destroied cond_var
         panic("condition variable %p has already been destroied!", cv);
     }
-    
+
     node_t *tmp = dequeue(&cv->deque);
     while (tmp) {
         int tmp_ktid = tmp->ktid;

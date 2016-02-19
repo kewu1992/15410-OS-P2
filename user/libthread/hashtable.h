@@ -18,7 +18,7 @@ typedef struct {
 
 int hashtable_init(hashtable_t *table);
 
-int hashtable_put(hashtable_t *table, void* key, void* vaule);
+void hashtable_put(hashtable_t *table, void* key, void* vaule);
 
 void* hashtable_get(hashtable_t *table, void* key, int *is_find);
 

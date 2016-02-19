@@ -7,6 +7,7 @@
 #include <syscall.h>
 #include <thr_internals.h>
 #include <simics.h>
+#include <stdio.h>
 
 int mutex_init(mutex_t *mp) {
     mp->lock_available = 1; 

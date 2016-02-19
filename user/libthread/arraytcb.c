@@ -15,6 +15,8 @@
  */
 
 #include <stdlib.h>
+#include <stdio.h>
+#include <simics.h>
 
 #include <cond.h>
 #include <mutex.h>
@@ -57,9 +59,11 @@ int arraytcb_init(int size) {
 
 /** @brief Double the size of arrarytcb
  */
-static void double_array() {
+static int double_array() {
     int newsize = array->maxsize * 2;
     tcb_t** newdata = calloc(newsize, sizeof(tcb_t*));
+    if (!newdata)
+        return -1;
     
     int i;
     for (i = 0; i < array->cursize; i++)
@@ -68,6 +72,8 @@ static void double_array() {
     array->maxsize = newsize;
     free(array->data);
     array->data = newdata;
+
+    return 0;
 }
 
 /** @brief Insert a thread (indicated by tid) to arraytcb
@@ -105,8 +111,12 @@ int arraytcb_insert_thread(int tid, mutex_t *mutex_arraytcb) {
         free(tmp);
         return index;
     } else {
-        if (array->cursize == array->maxsize)
-            double_array(array);
+        if (array->cursize == array->maxsize){
+            if (double_array(array) < 0) {
+                free(new_thread);
+                return -1;
+            }
+        }
 
         int index = array->cursize++;
         array->data[index] = new_thread;
@@ -136,8 +146,12 @@ int arraytcb_delete_thread(int index) {
         free(thr);
 
         availnode_t *tmp = malloc(sizeof(availnode_t));
-        if (!tmp)
-            return -1;
+        while (!tmp) {
+            lprintf("malloc failed, will try again...");
+            printf("malloc failed, will try again...\n");
+            yield(-1);
+            tmp = malloc(sizeof(availnode_t));
+        }
         tmp->index = index;
 
         tmp->next = array->avail_list->next;

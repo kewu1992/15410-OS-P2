@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdio.h>
 
 #include <thread.h>
 #include <mutex.h>
@@ -30,9 +31,9 @@ static unsigned int stack_size;
 static unsigned int thread_count;
 
 /** @brief Mutex to guard when calculating new stack positions */
-mutex_t mutex_thread_count;
+static mutex_t mutex_thread_count;
 
-mutex_t mutex_arraytcb;
+static mutex_t mutex_arraytcb;
 
 static hashtable_t hash_exit;
 
@@ -158,8 +159,6 @@ int thr_join(int tid, void **statusp) {
             lprintf("tcb state error");
             return -1;;
         } 
-    } else {
-        return -1;
     }
 
     // tid has exitted
@@ -190,9 +189,7 @@ void thr_exit(void *status) {
     tcb_t *thr = arraytcb_get_thread(index);
     if(thr == NULL) {
         // Something's wrong
-        printf("Can not find tcb, something's wrong");
-        lprintf("Can not find tcb, something's wrong");
-        return;
+        panic("thr_exit() failed, can not find tcb, something's wrong");
     }
 
     // if the exitting thread is master thread, also set task exit status
@@ -213,11 +210,8 @@ void thr_exit(void *status) {
 
     // release resource
     if(arraytcb_delete_thread(index) < 0) {
-        printf("arraytcb_delete_thread failed");
-        lprintf("arraytcb_delete_thread failed");
-        return;
+        panic("thr_exit() failed, can not delete tcb of %d", thr->tid);
     }
-
 
 
     /* The following code is executing 
@@ -238,21 +232,16 @@ void thr_exit(void *status) {
     if (!tmpnode) {
         mutex_arraytcb.lock_available = 1;
     } else {
-        int tmp_ktid = tmpnode->ktid;
         tmpnode->reject = 1;
-        make_runnable(tmp_ktid);
     }
 
-    uint32_t ret = get_pages_to_remove(index, page_remove_info);
-    if(ret < 0) {
-        return;
-    }
+    get_pages_to_remove(index, page_remove_info);
 
     // will call SPINLOCK_UNLOCK(&mutex_arraytcb->inner_lock) and vanish()
     // in asm_thr_exit() to avoid using stack
     asm_thr_exit(&mutex_arraytcb.inner_lock, page_remove_info);
 
-    lprintf("should never reach here");
+    panic("reach a place in thr_exit that should never be reached");
     return;
 
 }

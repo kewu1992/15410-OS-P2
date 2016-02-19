@@ -7,6 +7,7 @@
 #include <autostack.h>
 #include <lib_public.h>
 #include <thr_lib_helper.h>
+#include <stdio.h>
 
 /** @brief Exception stack high */
 static uint32_t exn_stack_high;
