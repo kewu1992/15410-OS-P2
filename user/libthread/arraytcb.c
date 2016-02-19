@@ -202,3 +202,12 @@ void arraytcb_free() {
     free(array->data);
     free(array);
 }
+
+int arraytcb_is_valid(int index) {
+    if(index < 0 || index >= array->cursize) {
+        return 0;
+    } else {
+        return 1;
+    }
+}
+

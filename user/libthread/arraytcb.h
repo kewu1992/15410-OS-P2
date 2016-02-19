@@ -29,4 +29,6 @@ int arraytcb_set_ktid(int index, int ktid);
 
 void arraytcb_free();
 
+int arraytcb_is_valid(int index);
+
 #endif
