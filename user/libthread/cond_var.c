@@ -15,21 +15,38 @@ int cond_init(cond_t *cv) {
 }
 
 void cond_destroy(cond_t *cv) {
-    mutex_destroy(&cv->mutex);
-    if (queue_destroy(&cv->deque) < 0){
-        // illegal, some threads are blocked waiting on it
+    if (!queue_is_active(&cv->deque)) {
+        // try to destory a destroied cond_var
+        panic("condition variable %p has already been destroied!", cv);
     }
+    mutex_destroy(&cv->mutex);
+
+    while (queue_destroy(&cv->deque) < 0) {
+        // illegal, some threads are blocked waiting on it
+        lprintf("Destroy condition variable %p failed, some threads are blocking on it, will try again...", cv);
+        printf("Destroy condition variable %p failed, some threads are blocking on it, will try again...\n", cv);
+        yield(-1);
+    }
+        
 }
 
 void cond_wait(cond_t *cv, mutex_t *mp) {
     node_t *tmp = malloc(sizeof(node_t));
-    if (!tmp) {
-        //lprintf("QAQ");
+    while (!tmp) {
+        lprintf("malloc failed, will try again...");
+        printf("malloc failed, will try again...\n");
+        yield(-1);
+        tmp = malloc(sizeof(node_t))
     }
     tmp->ktid = thr_getktid();
     tmp->reject = 0;
 
     mutex_lock(&cv->mutex);
+
+    if (!queue_is_active(&cv->deque)) {
+        // try to wait on a destroied cond_var
+        panic("condition variable %p has already been destroied!", cv);
+    }
 
     enqueue(&cv->deque, tmp);
 
@@ -37,7 +54,9 @@ void cond_wait(cond_t *cv, mutex_t *mp) {
 
     mutex_unlock(&cv->mutex);
     while(!tmp->reject) {
-        deschedule(&tmp->reject);
+        if (deschedule(&tmp->reject) < 0) {
+            lprintf("QAQ");
+        }
     }
     
     free(tmp);
@@ -47,22 +66,38 @@ void cond_wait(cond_t *cv, mutex_t *mp) {
 
 void cond_signal(cond_t *cv) {
     mutex_lock(&cv->mutex);
+    
+    if (!queue_is_active(&cv->deque)) {
+        // try to singal a destroied cond_var
+        panic("condition variable %p has already been destroied!", cv);
+    }
+
     node_t *tmp = dequeue(&cv->deque);
     if (tmp) {
         int tmp_ktid = tmp->ktid;
         tmp->reject = 1;
-        make_runnable(tmp_ktid);
+        if (make_runnable(tmp_ktid) < 0) {
+            lprintf("QAQ");
+        }
     }
     mutex_unlock(&cv->mutex);
 }
 
 void cond_broadcast(cond_t *cv) {
     mutex_lock(&cv->mutex);
+
+    if (!queue_is_active(&cv->deque)) {
+        // try to singal a destroied cond_var
+        panic("condition variable %p has already been destroied!", cv);
+    }
+    
     node_t *tmp = dequeue(&cv->deque);
     while (tmp) {
         int tmp_ktid = tmp->ktid;
         tmp->reject = 1;
-        make_runnable(tmp_ktid);
+        if (make_runnable(tmp_ktid) < 0) {
+            lprintf("QAQ");
+        }
         tmp = dequeue(&cv->deque);
     }
     mutex_unlock(&cv->mutex);
