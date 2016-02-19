@@ -20,5 +20,11 @@ int get_stack_position_index();
 
 uint32_t asm_get_esp();
 
+uint32_t asm_get_ebp();
+
+void* get_last_ebp(void* ebp);
+
+void set_rootthr_retaddr();
+
 #endif
 

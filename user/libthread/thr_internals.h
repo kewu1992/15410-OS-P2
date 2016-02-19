@@ -54,4 +54,6 @@ int thr_exitstatus_hashfunc(void *key);
 
 void asm_thr_exit(void *inner_lock, int* page_remove_info);
 
+void thr_ret2exit();
+
 #endif /* THR_INTERNALS_H */

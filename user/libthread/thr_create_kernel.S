@@ -1,6 +1,7 @@
 #include <syscall_int.h>
 
 .global thr_create_kernel
+.global thr_ret2exit
 
 thr_create_kernel:
     movl    4(%esp), %ecx       # save addr of func
@@ -16,6 +17,7 @@ thr_create_kernel:
     call    arraytcb_set_ktid   # 4. set its ktid in arraytcb
     addl    $8, %esp            # 5. "pop" index and ktid 
     call    %ecx                # 6. call func
+  thr_ret2exit:
     pushl   %eax                # push func's return value as the new param
     call    thr_exit            # call thr_exit if func doesn't call itself
 

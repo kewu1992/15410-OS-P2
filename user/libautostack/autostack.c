@@ -6,6 +6,7 @@
  */
 #include <autostack.h>
 #include <lib_public.h>
+#include <thr_lib_helper.h>
 
 /** @brief Exception stack high */
 static uint32_t exn_stack_high;
@@ -18,6 +19,8 @@ static uint32_t root_thread_stack_low;
 
 /** @brief Root thread stack high */
 static uint32_t root_thread_stack_high;
+
+void *ebp__main;
 
 /** @brief Get current root thread stack low
  *  
@@ -143,6 +146,10 @@ void swexn_handler(void *arg, ureg_t *ureg) {
  *  @return void
  */
 void install_autostack(void *stack_high, void *stack_low) {
+    // first get ebp of _main()
+    void* ebp = (void*)asm_get_ebp();
+    ebp__main = get_last_ebp(ebp);
+
     // The original root thread stack region
     root_thread_stack_high = (uint32_t)stack_high;
     root_thread_stack_low = (uint32_t)stack_low;

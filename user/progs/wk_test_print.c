@@ -2,16 +2,33 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <simics.h>
+#include <thread.h>
+
+void* func(void* arg) {
+    int tid = thr_getid();  
+    if (tid % 2 == 0)
+        thr_exit((void*)-tid);  
+    else
+        return (void*)tid;
+    return NULL;
+}
 
 int main(int argc, char **argv)
 {   
-    lprintf("I am in");
-    
-    char buf[] = "Hello, world\n";
-    int rv = print(13, buf);
-    lprintf("return value: %d", rv);
-    
-    lprintf("I am out");
-    
-    return 0;
+    /*
+    thr_init(4096);
+    int i;
+    for (i = 1; i < 5; i++) {
+        thr_create(func, NULL);
+    }
+
+    int ret;
+
+    for (i = 1; i < 5; i++) {
+        thr_join(i, (void**)&ret);
+        lprintf("%d: ret:%d", i, ret);
+    }
+    */
+
+    return 3;
 }

@@ -43,6 +43,9 @@ static hashtable_t hash_exit;
  *  @return On success return zero, on error return a negative number
  */
 int thr_init(unsigned int size) {
+    // From single thread program to multi-thread program, 
+    // change the return address or main().
+    set_rootthr_retaddr();
 
     stack_size = size;
 
@@ -179,6 +182,11 @@ void thr_exit(void *status) {
     }
 
     //lprintf("thread %d(%d) start exiting", thr->tid, thr->ktid);
+
+    // if the exitting thread is master thread, also set task exit status
+    if (thr->tid == 0) {
+        set_status((int)status);
+    }
     
     // put exit status to hash table for future reaping
     hashtable_put(&hash_exit, (void*)(thr->tid), status);
