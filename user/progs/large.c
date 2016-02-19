@@ -189,7 +189,7 @@ int main() {
 
     // Given 32K stack sizes, it should be impossible to generate 2^16 threads
     // on a machine with 256 MB memory.
-    thr_init(3557);
+    thr_init(20411);
     REPORT_START_ABORT;
 
     // For each term in our LFSR feedback table, spawn 2^n-1 threads.

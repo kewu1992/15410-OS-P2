@@ -179,30 +179,29 @@ uint32_t get_pages_to_remove(int index, int *page_remove_info) {
     uint32_t new_thread_stack_high_page = new_thread_stack_high & PAGE_ALIGN_MASK;
     uint32_t upper_stack_low = new_thread_stack_high + 1; 
     int can_remove = 1;
-    int i = 0;
-    if(index - 1 != 0) {
-        while((upper_stack_low & PAGE_ALIGN_MASK) == new_thread_stack_high_page) {
-            if(!arraytcb_is_valid(index - i)) {
-                break;
-            }
+    int i = 1;
 
-            thr = arraytcb_get_thread(index - i);
-            if(thr) {
-                // There's thread alive
-                can_remove = 0;
-                break;
-            } 
+    while(((upper_stack_low & PAGE_ALIGN_MASK) == new_thread_stack_high_page) && (index -1 != 0)) {
+        if(!arraytcb_is_valid(index - i)) {
+            break;
+        }
 
-            upper_stack_low += stack_size; 
-            i--;
+        thr = arraytcb_get_thread(index - i);
+        if(thr) {
+            // There's thread alive
+            can_remove = 0;
+            break;
         } 
-    }
+
+        upper_stack_low += stack_size; 
+        i++;
+    } 
 
     if(can_remove) {
         page_remove_info[0] = new_thread_stack_high & PAGE_ALIGN_MASK;
         page_remove_info[1] = 1;
     } else {
-        page_remove_info[0] = 0;
+        page_remove_info[1] = 0;
     }
 
     // # of pages between
@@ -227,7 +226,7 @@ uint32_t get_pages_to_remove(int index, int *page_remove_info) {
     uint32_t new_thread_stack_low_page = new_thread_stack_low & PAGE_ALIGN_MASK;
     uint32_t lower_stack_high = new_thread_stack_low - 1;
     can_remove = 1;
-    i = 0;
+    i = 1;
     while((lower_stack_high & PAGE_ALIGN_MASK) == new_thread_stack_low_page) {
         if(!arraytcb_is_valid(index + i)) {
             break;
@@ -244,12 +243,19 @@ uint32_t get_pages_to_remove(int index, int *page_remove_info) {
         i++;
     } 
 
-    if(can_remove) {
-        page_remove_info[4] = new_thread_stack_low & PAGE_ALIGN_MASK;
-        page_remove_info[5] = 1;
+    if((new_thread_stack_low & PAGE_ALIGN_MASK) != 
+            (new_thread_stack_high & PAGE_ALIGN_MASK)) {
+        if(can_remove) {
+            page_remove_info[4] = new_thread_stack_low & PAGE_ALIGN_MASK;
+            page_remove_info[5] = 1;
+        } else {
+            page_remove_info[5] = 0;
+        }
     } else {
         page_remove_info[5] = 0;
-    }
+
+        page_remove_info[1] &= can_remove;
+    } 
 
     return 0;
 }

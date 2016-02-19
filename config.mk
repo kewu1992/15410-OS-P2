@@ -94,7 +94,7 @@ UPDATE_METHOD = afs
 # directory
 #
 
-STUDENTTESTS = wk_test_thrcreate small_test wk_test_print
+STUDENTTESTS = wk_test_thrcreate small_test wk_test_print large
 
 ###########################################################################
 # Object files for your thread library
