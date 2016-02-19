@@ -2,9 +2,143 @@
 
 @mainpage 15-410 Project 2
 
-@author Name1 (id1)
-@author Name2 (id2)
+@author Jian Wang (jianwan3)
+@author Ke Wu (kewu)
 
-Same drill as last time.
+1. Mutex
+Mutex is a low level constuct that serves the purpose of mutual exclusion.
+We have devised both a basic spinlock mutex and an advanced mutex that 
+approximates bounded waiting. 
+
+1.1 Spinlock
+The spinlock mutex is used in basic libraies like malloc and serves as the 
+inner lock of the advanced mutex. It simply tries to acqure a lock for a 
+limited times until it defers trying through yielding. The design 
+choice related to it is whether to yield imediately if a lock is not 
+available. In a single core machine, if a lock is not available, then it's 
+likely other thread not running is holding the lock, so the current thread 
+should yield immediately; in a multi-core machine, the thread that is holding 
+the lock may be running as well and is likely to release the lock in a short 
+time, so it makes sense for the current thread to try acquring for a few times
+instead of yielding immediately. To adapt to work well in a multi-threaded 
+environment, our spinlock tries a few times before it yields.
+
+1.2 Advanced mutex approximating bounded waiting
+The advanced mutex uses a queue to manage threads that want the lock object
+and a spinlock as an inner lock to guard against accesses to the queue and 
+the lock object. When a thread tries to acquire a lock and can not make it
+because other thread is holding it, it enqueues itself to the waiting queue,
+yields itself and checks for lock availability next time it awakes. When the 
+lock holder thread unlocks the mutex, it deques the first thread in the 
+waiting queue of the lock, and yields the exection to it. The advanced mutex
+achives bounded waiting through the usage of a waiting queue, but it's an
+approximation in the sense that the inner lock it uses to accessing the 
+waiting queue is a spinlock that cannot be avoided.
+
+2. Condition variable 
+A condition variable is used to wait for an event with efficiency by 
+relinquishing CPU voluntarily to other threads until the event changes 
+signals.In our implementation, it uses a mutex to guard against its accessing 
+to the waiting queue, which contains the threads that are waiting for an event
+to change. There are race conditions involved when threads dechedule to wait 
+for an event and when threads make others runnable to signal an event. The 
+atomicity is achieved through the usage of a flag called reject.
+
+3. Semaphore
+A semaphore is implemented with mutex, condition variable, and a counter. 
+The counter gives the idea of how many resources are left. The mutex is used 
+to guard against accessing and modifying counter, while the condition variable
+blocks and signals threads when there's no resources left.
+
+
+
+4. Read write lock
+
+
+
+Data structures related to thread management:
+An expandable array called arraytcb is used to manage thread's information.
+Each thread has an associated tcb (thread control block) to manage it. The 
+tcb of a thread contains information like: state (RUNNING, JOINED), ktid 
+(thread id in the kernel side), tid (Thread id used by the thread lib, 
+increamented monotonically with the root thread's tid as 0, the first new 
+thread's tid as 1, the second as 2, etc), and a condition variable for it.
+
+When a thread is create, its personal tcb is created and inserted into the
+arraytcb. Later, the thread's information can be achieved from the arraytcb
+by using its index, which is the same as its stack position index.
+
+A hashtable is used to manage threads's exit status. When a thread exits, 
+either by explicitly calling thr_exit, or returns directly, thr_exit will 
+be called anyway to delete the tcb of the thread in the arraytcb, put in 
+the hashtable with thread id as key, and return value as value. The stack 
+space of the exiting thread is released immediately by remove_pages() 
+except the pages that other alive threads are sharing. Later, when a thread 
+joins other thread, it will look up the hashtable to get the exit status of 
+the thread.
+
+Thread stack space management:
+Each thread's stack space is ajacent to each other, with the highest stack
+being originally the root thread's stack. Each thread get's an index
+specifying where its stack region is when it's created. The index
+is determined by the current available slots on the stack, which corresponds
+to an available slot in the arraytcb. After the index is assigned, the pages
+of the thread's stack region are allocated and the thread's stack pointer is
+set to the top of its private stack.
+
+Stack memory management:
+Stack spaces are allocated through new_pages() syscall each time a new thread
+is created and removed through remove_pages() syscall when it exits. Our
+implementation favors this approach over the one that preserves allocated 
+stack spaces for future threads' use without deallocating them until the
+entire task vanishes, for the reason that though there may be some overhead
+of repetedly calling syscalls of new_pages() and remove_pages(), in the real
+application usage, if the user application is a long running program like a 
+server or database, it may ocasionally create a lot of worker threads that
+will exit after their works are done, but itself, the root thread, will live
+for a long time and the task will not vanish, thus the previously allocated
+stack space for work threads will be held by this task wastefully, and no
+other tasks can use these spaces until the server or database vanishes.
+
+Autostack for single root thread:
+Autostack is supported for single-threaded programs. The root thread's stack
+can grow down beyond the orinal limit allocated by the kernel until there's
+not enough memory resources. This function is achieved through the usage of 
+an exception handler dedicated to page fault caused by accessing memory 
+outside of stack space previously allocated. The exception handler is
+registered for the root thread at the entry point of the program and 
+re-registered again after it handles a fixable page fault opearation on 
+the stack. Autostack is disabled when a new thread is created and the program 
+enters multi-threaded mode. The root thread's stack low will become fixated 
+and will not be extended any more. If in the future the root thread uses more 
+space than its current max stack size and causes a page fault, the kernel
+will handle it instead of the user exception handler.
+
+Function call failure handling:
+For function calls that have a non-void return type, we report the error to 
+callers. For function calls that have a void return type, 
+For malloc calls, we print a log message and at the same time retry.
+(MORE ON THIS)
+
+Discussions:
+Buffer zone
+In the current implementation, stack spaces of different threads are ajacent
+to each other without a "buffer zone", say, a page that doesn't belong to
+any thread. In other words, there's no protection and warning if a thread 
+accesses stack space that doesn't belong to it and that stack space happenes 
+to have been allocated for another thread. Although, a thread can always 
+access other's stack space if it really wants to by skipping the buffer zone, 
+but the idea of buffer zone gives protection to some extent.
+
+Multi-threaded autostack
+The other idea we have considered but not implemented is mutlti-threaded
+autostack. The idea is to allocate exact amout of virtual address space that
+each thread asks for, but at most one page physical space initially for each 
+thread and only after it uses more than that amount of memory do we give them 
+more. This approach is likely to work well in a running environment with 
+limited physical space that needs a lot of threads set with large stack size 
+but don't actually use that many.
+
+
 
 */
