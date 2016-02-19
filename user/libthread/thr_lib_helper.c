@@ -1,9 +1,17 @@
+/** @file thr_lib_helper.c
+ *
+ *  @brief A helper for thread library that contains functions 
+ *  that do stack space management.
+ *  
+ *  @author Jian Wang (jianwan3)
+ *  @author Ke Wu (kewu)
+ *  @bug No known bugs
+ */
 #include <stdint.h>
 #include <thr_lib_helper.h>
 #include <arraytcb.h>
 #include <string.h>
 #include <thr_internals.h>
-
 
 /**
  * @brief Root thread stack low
@@ -15,16 +23,26 @@ static uint32_t root_thread_stack_low;
  */
 static uint32_t root_thread_stack_high;
 
-/** @brief The amount of stack space available for each thread */
+/** @brief The max amount of stack space available for each thread */
 static unsigned int stack_size;
 
+/** @brief The %ebp value of the _main function stack frame */
 extern void *ebp__main;
 
+
+/** @brief Initialize thr_lib_helper.
+ *
+ *  Set stack size limit for each thread except for root thread (which may
+ *  have a chance to grow because of the autostack function) and get root 
+ *  thread stack high (which is deterministic at the moment kernel handed
+ *  control to the thread library). Root thread stack low is not determined
+ *  at this point so that we will wait until we create a first thread.
+ *
+ */
 int thr_lib_helper_init(unsigned int size) {
 
     stack_size = size;
 
-    // root thread stack high is deterministic
     root_thread_stack_high = get_root_thread_stack_high();
 
     return 0;
@@ -32,13 +50,16 @@ int thr_lib_helper_init(unsigned int size) {
 
 /** @brief Get stack top for a new thread
  *  
- *  Compute the stack region for a new thread, allocate new pages
- *  if necessary, and get a stack top that meets alignment requirement 
+ *  Compute the stack region for a new thread, allocate new pages for its
+ *  stack, and return a stack top that meets alignment requirement. To achieve
+ *  maximum concurrency, multiple threads can call thr_create at the 
+ *  same time, so that there's no guarantee that ajacent stack spaces are
+ *  allocated in any order, each thread will not assume stack space upper
+ *  or lower than its stack are allocated or not.
  *
- *  @param index The index of thread stacks
- *  (The highest stack is #0)
+ *  @param index The index of thread stacks (0 based)
  *
- *  @return Stack top for a new thread
+ *  @return Stack top for a new thread on success; -1 on error
  *
  */
 uint32_t get_new_stack_top(int index) {
@@ -70,26 +91,35 @@ uint32_t get_new_stack_top(int index) {
     uint32_t new_thread_stack_high = new_thread_stack_low + 
         stack_size - 1;
 
-    //uint32_t upper_stack_low = new_thread_stack_high + 1; 
+    // The page address where new thread stack low is in
+    uint32_t new_thread_stack_low_page = new_thread_stack_low &
+        PAGE_ALIGN_MASK;
 
-    // uint32_t lower_stack_high = new_thread_stack_low - 1;
+    // The page address where new thread stack high is in
+    uint32_t new_thread_stack_high_page = new_thread_stack_high &
+        PAGE_ALIGN_MASK;
 
+    // # of pages between where stack high is in and where stack low is in.
+    // Note this doesn't include the highest page of the new thread stack
+    int num_pages = (new_thread_stack_high_page - 
+            new_thread_stack_low_page)/PAGE_SIZE;
 
-    // # of pages between
-    int num_pages = ((new_thread_stack_high & PAGE_ALIGN_MASK) -
-        (new_thread_stack_low & PAGE_ALIGN_MASK))/PAGE_SIZE;
+    // When trying to allocate stack space, consider the new thread stack 
+    // space in 3 parts, the highest page that may overlap with upper stack, 
+    // the middle pages that are private to itself, and the lowest page that 
+    // may overlap with lower stack.
 
     // Allocate highest page of this stack region, fail is normal since this 
     // page may have been already been allocated 
     int ret = new_pages((void *)(new_thread_stack_high & PAGE_ALIGN_MASK), 
-                PAGE_SIZE);
+            PAGE_SIZE);
     if(ret && ret != ERROR_NEW_PAGES_OVERLAP_EXISTING_REGION) {
         return ret;
     } 
 
+    // Allocate middle pages of this stack region, shouldn't fail since 
+    // middle pages don't overlap with other threads' stack regions
     if(num_pages > 1) {
-        // Allocate middle pages, shouldn't fail since middle pages of this
-        // stack region don't overlap with other threads' stack regions
         ret = new_pages((void *)((new_thread_stack_low & PAGE_ALIGN_MASK)
                     + PAGE_SIZE),  (num_pages - 1) * PAGE_SIZE);
         if(ret) {
@@ -97,12 +127,12 @@ uint32_t get_new_stack_top(int index) {
         }    
     }
 
+    // Allocate lowest page, fail is normal since the page may have already 
+    // been allocated.
     if((new_thread_stack_low & PAGE_ALIGN_MASK) != 
             (new_thread_stack_high & PAGE_ALIGN_MASK)) {
-        // Allocate lowest page, fail is normal since the page may have
-        // already been allocated
         ret = new_pages((void *)(new_thread_stack_low & PAGE_ALIGN_MASK),
-                    PAGE_SIZE);
+                PAGE_SIZE);
         if(ret && ret != ERROR_NEW_PAGES_OVERLAP_EXISTING_REGION) {
             return ret;
         } 
@@ -110,8 +140,7 @@ uint32_t get_new_stack_top(int index) {
 
     // The 1st available new stack position is last thread's stack low - 1
     // Keep decrementing until it aligns with 4
-    uint32_t new_stack_top = root_thread_stack_low - 
-        (index - 1) * stack_size - 1;
+    uint32_t new_stack_top = new_thread_stack_high; 
     while(new_stack_top % ALIGNMENT != 0) {
         new_stack_top--;
     }
@@ -119,13 +148,27 @@ uint32_t get_new_stack_top(int index) {
     return new_stack_top;
 }
 
-// page_remove_indo[0] = base1, [1] = is_remove, [2]
+/** @brief Get the information about pages to remove in a thread's stack space
+ *  
+ *  For each stack space, at the time we allocate it, we divide the stack
+ *  space into 3 parts, so that when we need to remove it, we also need to 
+ *  consider 3 parts separately. The general idea is not to remove a page
+ *  if any other thread is use it.
+ *
+ *  @param index The index of thread stacks (0 based)
+ *
+ *  @param page_remove_info An array that information about which pages to 
+ *  remove.
+ *
+ *  @return 0 on success; -1 on error.
+ *
+ */
 uint32_t get_pages_to_remove(int index, int *page_remove_info) {
 
     if(index == 0) {
-        page_remove_info[1] = 0;
-        page_remove_info[3] = 0;
-        page_remove_info[5] = 0;
+        page_remove_info[HIGHEST_PAGE_CAN_REMOVE] = 0;
+        page_remove_info[MIDDLE_PAGES_CAN_REMOVE] = 0;
+        page_remove_info[LOWEST_PAGE_CAN_REMOVE] = 0;
         return 0;
     }
 
@@ -137,12 +180,15 @@ uint32_t get_pages_to_remove(int index, int *page_remove_info) {
     tcb_t *thr;
 
     // The page address where new_thread_stack_high is in
-    uint32_t new_thread_stack_high_page = new_thread_stack_high & PAGE_ALIGN_MASK;
+    uint32_t new_thread_stack_high_page = new_thread_stack_high 
+        & PAGE_ALIGN_MASK;
+    uint32_t new_thread_stack_low_page = new_thread_stack_low & 
+        PAGE_ALIGN_MASK;
     uint32_t upper_stack_low = new_thread_stack_high + 1; 
     int can_remove = 1;
     int i = 1;
-
-    while(((upper_stack_low & PAGE_ALIGN_MASK) == new_thread_stack_high_page) && (index -1 != 0)) {
+    while(((upper_stack_low & PAGE_ALIGN_MASK) == new_thread_stack_high_page) 
+            && (index -1 != 0)) {
         if(!arraytcb_is_valid(index - i)) {
             break;
         }
@@ -159,32 +205,31 @@ uint32_t get_pages_to_remove(int index, int *page_remove_info) {
     } 
 
     if(can_remove) {
-        page_remove_info[0] = new_thread_stack_high & PAGE_ALIGN_MASK;
-        page_remove_info[1] = 1;
+        page_remove_info[HIGHEST_PAGE_BASE] = new_thread_stack_high_page;
+        page_remove_info[HIGHEST_PAGE_CAN_REMOVE] = 1;
     } else {
-        page_remove_info[1] = 0;
+        page_remove_info[HIGHEST_PAGE_CAN_REMOVE] = 0;
     }
 
-    // # of pages between
-    int num_pages = ((new_thread_stack_high & PAGE_ALIGN_MASK) -
-        (new_thread_stack_low & PAGE_ALIGN_MASK))/PAGE_SIZE;
+    // # of pages between where stack high is in and where stack low is in.
+    // Note this doesn't include the highest page of the new thread stack
+    int num_pages = (new_thread_stack_high_page - 
+            new_thread_stack_low_page)/PAGE_SIZE;
 
     // Middle pages
     if(num_pages > 1) {
-        page_remove_info[2] = (new_thread_stack_low & PAGE_ALIGN_MASK) + PAGE_SIZE;
-        page_remove_info[3] = 1;
+        page_remove_info[MIDDLE_PAGES_BASE] = 
+            new_thread_stack_low_page + PAGE_SIZE;
+        page_remove_info[MIDDLE_PAGES_CAN_REMOVE] = 1;
     } else {
-        page_remove_info[3] = 0;
+        page_remove_info[MIDDLE_PAGES_CAN_REMOVE] = 0;
     }
 
-    // If lowest page overlaps with lower stack, remove page
+    // If lowest page overlaps with lower thread's stack, remove page
     // if there's no thread alive in lower stack
 
-
-    // If stack size is smaller than a page, must ensure all threads inside the
-    // page are not alive
-
-    uint32_t new_thread_stack_low_page = new_thread_stack_low & PAGE_ALIGN_MASK;
+    // If stack size is smaller than a page, must ensure all threads inside 
+    // the page are not alive
     uint32_t lower_stack_high = new_thread_stack_low - 1;
     can_remove = 1;
     i = 1;
@@ -204,46 +249,27 @@ uint32_t get_pages_to_remove(int index, int *page_remove_info) {
         i++;
     } 
 
-    if((new_thread_stack_low & PAGE_ALIGN_MASK) != 
-            (new_thread_stack_high & PAGE_ALIGN_MASK)) {
+    // Check if highest page overlaps with the lowest page
+    if(new_thread_stack_low_page != new_thread_stack_high_page) {
         if(can_remove) {
-            page_remove_info[4] = new_thread_stack_low & PAGE_ALIGN_MASK;
-            page_remove_info[5] = 1;
+            page_remove_info[LOWEST_PAGE_BASE] = new_thread_stack_low_page;
+            page_remove_info[LOWEST_PAGE_CAN_REMOVE] = 1;
         } else {
-            page_remove_info[5] = 0;
+            page_remove_info[LOWEST_PAGE_CAN_REMOVE] = 0;
         }
     } else {
-        page_remove_info[5] = 0;
+        // Highest page and lowest page are the same page!
+        // then must ensure all threads within the page are not alive, 
+        // thus here we combine the information of highest page computed 
+        // above with the lowest page.
+        page_remove_info[LOWEST_PAGE_CAN_REMOVE] = 0;
 
-        page_remove_info[1] &= can_remove;
+        page_remove_info[HIGHEST_PAGE_CAN_REMOVE] &= can_remove;
     } 
 
     return 0;
 }
 
-
-/** @brief Get stack high given stack position index 
- *  
- *  @param index Stack position index
- *
- *  @return Stack high of a stack position index
- *  @bug Should check if root_thread_stack_low has been initialized
- *  Will address it shortly
- */
-uint32_t get_stack_high(int index) {
-
-    if(index == 0) {
-        return root_thread_stack_high;
-    }
-
-    uint32_t cur_stack_high = root_thread_stack_low - 
-        (index - 1) * stack_size - 1;
-    while(cur_stack_high % ALIGNMENT != 0) {
-        cur_stack_high--;
-    }
-
-    return cur_stack_high;
-}
 
 /** @brief Get stack position index of the current thread 
  *  
@@ -275,7 +301,7 @@ void* get_last_ebp(void* ebp) {
     return (void*) last_ebp;
 }
 
-void set_rootthr_retaddr(){
+void set_rootthr_retaddr() {
     // trace back, until find main() and __main()
     void* ebp = (void*)asm_get_ebp();
     void* last_ebp = get_last_ebp(ebp);

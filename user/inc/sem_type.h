@@ -10,8 +10,13 @@
 #include <stddef.h>
 
 typedef struct sem {
+    /** @brief A mutux to guard access to changes to cond and count */
     mutex_t mutex;
+    /** @brief A condition variable to wait and signal threads according 
+     * to the available count. 
+     */
     cond_t cond;
+    /** @brief A counter indicating the number of resources availbale */
     int count;
 } sem_t;
 
