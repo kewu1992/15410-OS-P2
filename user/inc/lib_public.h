@@ -40,11 +40,13 @@
 /** @brief Error code indicating memory address misalignment */
 #define ERROR_MISALIGNMENT (3)
 
-// Functions in libautostack for other lib to use
+/* Functions in libautostack for other lib to use */
+
 uint32_t get_root_thread_stack_low();
 uint32_t get_root_thread_stack_high();
 
-// Functions in libthread for other lib to use
+/* Functions in libthread for other lib to use */
+
 int malloc_init();
 
 #endif 
