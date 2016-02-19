@@ -57,7 +57,7 @@ void cond_wait(cond_t *cv, mutex_t *mp) {
     mutex_unlock(&cv->mutex);
     while(!tmp->reject) {
         if (deschedule(&tmp->reject) < 0) {
-            lprintf("QAQ");
+            panic("deschedule error of condition variable %p", cv);
         }
     }
     
@@ -78,9 +78,7 @@ void cond_signal(cond_t *cv) {
     if (tmp) {
         int tmp_ktid = tmp->ktid;
         tmp->reject = 1;
-        if (make_runnable(tmp_ktid) < 0) {
-            lprintf("QAQ");
-        }
+        make_runnable(tmp_ktid);
     }
     mutex_unlock(&cv->mutex);
 }

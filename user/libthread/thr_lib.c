@@ -98,8 +98,6 @@ int thr_create(void *(*func)(void *), void *args) {
     if ((stack_addr = (uint32_t)get_new_stack_top(index)) 
             % ALIGNMENT != 0){
         // return value can not be divided by ALIGNMENT, it is an error 
-        printf("%d: get_new_stack_top() error", tid);
-        lprintf("%d: get_new_stack_top() error", tid);
         return -1;
     }
 
@@ -115,8 +113,7 @@ int thr_create(void *(*func)(void *), void *args) {
     // its stack address (esp)
     int child_ktid;
     if ((child_ktid = thr_create_kernel(func, (void*)(stack_addr-12))) < 0) {
-        printf("%d: thr_create_kernel() error", tid);
-        lprintf("%d: thr_create_kernel() error", tid);
+        // thread_fork error
         return -1;
     }
 
@@ -155,8 +152,7 @@ int thr_join(int tid, void **statusp) {
             cond_wait(&thr->cond_var, &mutex_arraytcb);
             break;
         default:
-            printf("tcb state error");
-            lprintf("tcb state error");
+            // tcb state error
             return -1;;
         } 
     }
@@ -174,8 +170,7 @@ int thr_join(int tid, void **statusp) {
     if (is_find) {
         return 0;
     } else {
-        printf("Can not find exit status of tid in hash table");
-        lprintf("Can not find exit status of tid in hash table");
+        // Can not find exit status of tid in hash table, might already been reaped by other thread
         return -1;
     }
    
