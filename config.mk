@@ -85,7 +85,7 @@ UPDATE_METHOD = afs
 # A list of the test programs you want compiled in from the 410user/progs
 # directory
 #
-410TESTS = cyclone cvar_test agility_drill mandelbrot multitest mutex_destroy_test nibbles paraguay racer rwlock_downgrade_read_test stack_test1 startle switzerland thr_exit_join wild_test1 misbehave misbehave_wrap
+410TESTS = cyclone cvar_test agility_drill mandelbrot multitest mutex_destroy_test paraguay racer rwlock_downgrade_read_test stack_test1 startle switzerland thr_exit_join wild_test1 misbehave misbehave_wrap join_specific_test
 
 ###########################################################################
 # Test programs you have written which you wish to run

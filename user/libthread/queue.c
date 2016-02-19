@@ -39,5 +39,11 @@ int queue_destroy(deque_t *deque) {
         return -1;
     free(deque->head);
     free(deque->tail);
+    deque->head = NULL;
+    deque->tail = NULL;
     return 0;
+}
+
+int queue_is_active(deque_t *deque) {
+    return (!deque->head || !deque->tail) ? 0 : 1;
 }
