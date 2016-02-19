@@ -6,6 +6,7 @@
  */
 
 #include <sem.h>
+#include <assert.h>
 
 /** @brief Initialize semaphore
  *  
@@ -38,16 +39,13 @@ int sem_init(sem_t *sem, int count) {
  *  @return void
  */
 void sem_wait(sem_t *sem) {
-    if(sem == NULL) return;
-
     mutex_lock(&sem->mutex);
+
     if(sem->count > 0) {
         sem->count--;
     } else {
-        if(sem->count < 0) {
-            // Error case, bahavior will be undefined
-            mutex_unlock(&sem->mutex);
-            return;
+        if (sem->count < 0) {
+            panic("semaphore %p has already been destroied!", sem);
         }
 
         // sem->count is 0, should block
@@ -71,10 +69,14 @@ void sem_wait(sem_t *sem) {
  *  @return void
  */
 void sem_signal(sem_t *sem) {
-    if(sem == NULL) return;
-
     mutex_lock(&sem->mutex);
+    
+    if (sem->count < 0) {
+        panic("semaphore %p has already been destroied!", sem);
+    }
+
     sem->count++;
+
     mutex_unlock(&sem->mutex);
 
     // Wake up one
@@ -90,7 +92,15 @@ void sem_signal(sem_t *sem) {
  */
 void sem_destroy(sem_t *sem) {
 
+    mutex_lock(&sem->mutex);
+
+    if (sem->count < 0) {
+        panic("semaphore %p has already been destroied!", sem);
+    }
+
     sem->count = -1;
+    
+    mutex_unlock(&sem->mutex);
 
     mutex_destroy(&sem->mutex);
     cond_destroy(&sem->cond);

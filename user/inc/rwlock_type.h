@@ -11,6 +11,7 @@
 typedef struct rwlock {
     int lock_state;
     int writer_waiting_count;
+    int reader_waiting_count;
     mutex_t mutex_inner;
     cond_t  cond_reader;
     cond_t  cond_writer;
