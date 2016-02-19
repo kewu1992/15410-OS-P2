@@ -2,6 +2,7 @@
  *
  *  @brief This file contains the implementation of a double-ended queue
  *
+ *  @author Ke Wu <kewu@andrew.cmu.edu>
  *  @bug None known
  */
 

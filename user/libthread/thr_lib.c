@@ -170,6 +170,7 @@ int thr_join(int tid, void **statusp) {
     }
     mutex_unlock(&mutex_thread_count);
 
+    // try to find the tcb
     mutex_lock(&mutex_arraytcb);
     tcb_t* thr = arraytcb_find_thread(tid);
     if (thr) {
@@ -190,7 +191,7 @@ int thr_join(int tid, void **statusp) {
         } 
     }
 
-    // tid has exitted
+    // thread of tid has exitted
     mutex_unlock(&mutex_arraytcb);
 
     // try to find exit status of tid in hash table
@@ -221,17 +222,17 @@ int thr_join(int tid, void **statusp) {
  *
  */
 void thr_exit(void *status) {
-
-    // Find current thread's stack position index
+    // Get stack position index of the current thread
     int index = get_stack_position_index();
 
+    // get my tcb
     tcb_t *thr = arraytcb_get_thread(index);
     if(thr == NULL) {
         // Something's wrong
         panic("thr_exit() failed, can not find tcb, something's wrong");
     }
 
-    // if the exitting thread is master thread, also set task exit status
+    // if the exiting thread is master thread, also set task exit status
     if (thr->tid == 0) {
         set_status((int)status);
     }
@@ -241,7 +242,7 @@ void thr_exit(void *status) {
 
     mutex_lock(&mutex_arraytcb);
 
-    // Thread is either running or someone has called join on it
+    // check if some threads has called join on it
     if(thr->state == JOINED) {
         // Signal the thread who called join
         cond_signal(&thr->cond_var);
@@ -255,15 +256,17 @@ void thr_exit(void *status) {
 
     /* The following code is executing 
      *      mutex_unlock(&mutex_arraytcb);
+     *      remove_page();
      *      vanish();
-     * However, instead of calling these two fucntions directly, 
+     * However, instead of calling these fucntions directly, 
      * the program will call them "manually" with assembly to avoid
      * using stack after mutex is unlocked. Because after mutex is 
-     * unlocked, other threads may use the stack of the exitting thread
-     * immediately. 
+     * unlocked, other threads may try to use the stack of the exitting thread
+     * immediately. Also remove_page() will be called before vanish() so
+     * stack will become unavailable when calling vanish().
      */
 
-    // call mutex_unlock(mutex_arraytcb) manually to avoid "unlocking"
+    // call mutex_unlock(mutex_arraytcb) "manually" to avoid "unlocking"
     SPINLOCK_LOCK(&mutex_arraytcb.inner_lock);
 
     node_t *tmpnode = dequeue(&mutex_arraytcb.deque);
@@ -276,11 +279,11 @@ void thr_exit(void *status) {
 
     get_pages_to_remove(index, page_remove_info);
 
-    // will call SPINLOCK_UNLOCK(&mutex_arraytcb->inner_lock) and vanish()
-    // in asm_thr_exit() to avoid using stack
+    // will call SPINLOCK_UNLOCK(&mutex_arraytcb->inner_lock), remove_page() abd
+    //  vanish() in asm_thr_exit() to avoid using stack
     asm_thr_exit(&mutex_arraytcb.inner_lock, page_remove_info);
 
-    panic("reach a place in thr_exit that should never be reached");
+    panic("reach a place in thr_exit() that should never be reached");
     return;
 
 }
@@ -296,8 +299,10 @@ int thr_getid() {
     // Get stack position index of the current thread
     int index = get_stack_position_index();
 
+    // get my tcb
     tcb_t *thr = arraytcb_get_thread(index);
     if(thr == NULL) {
+        // can not find my tcb, something wrong...
         return -1;
     }
 
@@ -315,8 +320,10 @@ int thr_getktid() {
     // Get stack position index of the current thread
     int index = get_stack_position_index();
 
+    // get my tcb
     tcb_t *thr = arraytcb_get_thread(index);
     if(thr == NULL) {
+        // can not find my tcb, something wrong...
         return -1;
     }
 
@@ -353,7 +360,7 @@ int thr_yield(int tid) {
 
 /** @brief Initialize exit_status hash table
  *  
- *  First Set hash table size and hash function.
+ *  First set hash table size and hash function.
  *  Then invoke hashtable_init() API to do initialization.
  *
  *  @return On success return 0, on error return a negative number
@@ -366,9 +373,9 @@ int thr_hashtableexit_init() {
 
 /** @brief The hash function for exit_status hash table
  *  
- *  Exit_status hash table takes tid as key. So this hash function simply uses
- *  modular to do hashing. Note that this hash function is specific for 
- *  exit_status hash table.
+ *  Exit_status hash table takes tid as key and exit status as value. So this 
+ *  hash function simply uses modular to do hashing. Note that this hash 
+ *  function is specific for exit_status hash table.
  *  
  *  @param key The key to calculate index of exit_status hash table
  * 

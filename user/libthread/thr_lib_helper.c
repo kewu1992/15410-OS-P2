@@ -26,7 +26,8 @@ static uint32_t root_thread_stack_high;
 /** @brief The max amount of stack space available for each thread */
 static unsigned int stack_size;
 
-/** @brief The %ebp value of the _main function stack frame */
+/** @brief The %ebp value of the _main() function stack frame, this value is
+ *         set by install_autostack() of autostack.c before program is running*/
 extern void *ebp__main;
 
 
@@ -301,6 +302,16 @@ void* get_last_ebp(void* ebp) {
     return (void*) last_ebp;
 }
 
+/** @brief Modify the return address of master thread 
+ *  
+ *  Modify return address of master thread (return address of main()) 
+ *  when the program become a multi-thread program. So that when main() return 
+ *  it will go to thr_ret2exit() in thr_create_kernel.S and call thr_exit().
+ *
+ *  This function will use %ebp to trace back until find %ebp of _main(). And 
+ *  then modify return address of main().
+ *
+ */
 void set_rootthr_retaddr() {
     // trace back, until find main() and __main()
     void* ebp = (void*)asm_get_ebp();
@@ -309,6 +320,7 @@ void set_rootthr_retaddr() {
         ebp = last_ebp;
         last_ebp = get_last_ebp(ebp);
     }
+    // last_ebp is for _main() then ebp is for main(), change return address
     void *thr_ret2exit_addr = thr_ret2exit;
     memcpy((void*)((uint32_t)ebp + 4), &thr_ret2exit_addr, 4);
 }
