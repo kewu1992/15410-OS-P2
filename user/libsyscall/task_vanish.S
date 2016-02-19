@@ -1,3 +1,11 @@
+/** @file task_vanish.S
+ *  @brief Asm wrapper for task_vanish syscall
+ *
+ *  @author Ke Wu (kewu)
+ *  @author Jian Wang (jianwan3)
+ *
+ *  @bug No known bugs.
+ */
 
 #include <syscall_int.h>
 

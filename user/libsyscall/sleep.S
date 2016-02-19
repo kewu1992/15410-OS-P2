@@ -1,3 +1,11 @@
+/** @file sleep.S
+ *  @brief Asm wrapper for sleep syscall
+ *
+ *  @author Ke Wu (kewu)
+ *  @author Jian Wang (jianwan3)
+ *
+ *  @bug No known bugs.
+ */
 
 #include <syscall_int.h>
 

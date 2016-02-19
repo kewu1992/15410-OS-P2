@@ -2,7 +2,11 @@
  *
  *  @brief This file contains implementation of semaphore built
  *  on top of mutex and condition variables
+ *  
+ *  @author Jian Wang (jianwan3)
+ *  @author Ke Wu (kewu)
  *
+ *  @bug None known
  */
 
 #include <sem.h>
