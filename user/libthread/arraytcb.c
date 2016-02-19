@@ -12,7 +12,7 @@
  *  linked list that stores all avilable (no be used by any thread) stack 
  *  'slot' so that arraytcb_insert_thread() can be done in O(1) time. 
  *
- *
+ *  @author Ke Wu <kewu@andrew.cmu.edu>
  *  @bug no known bug
  */
 
@@ -23,12 +23,20 @@
 #include <cond.h>
 #include <mutex.h>
 #include <arraytcb.h>
- 
+
+/** @brief The node type of array->avail_list, it has one data field 'index' to 
+ *         indicate which stack 'slot' is available (no be used by any thread)*/
 typedef struct availnode_s {
     struct availnode_s *next;
     int index;
 } availnode_t;
 
+/** @brief The data structure of arraytcb. maxsize is the maximum capacity of
+ *         arraytcb, cursize is the current capacity of arraytcb. When 
+ *         maxsize == cursize, it means there is no room for new thread, 
+ *         arraytcb should be doubled. array->data is where the actucal tcb
+ *         data stored in. array->avail_list is a linked list that stores all 
+ *         avilable (no be used by any thread) stack 'slot'. */
 static struct arraytcb_s {
     int maxsize, cursize;
     tcb_t** data;
@@ -60,6 +68,11 @@ int arraytcb_init(int size) {
 }
 
 /** @brief Double the size of arrarytcb
+ *
+ *  When array->cursize == array->maxsize, this function will be invoked to 
+ *  double the size of arraytcb.
+ *
+ *  @return On success return 0, on error return -1
  */
 static int double_array() {
     int newsize = array->maxsize * 2;
@@ -80,19 +93,27 @@ static int double_array() {
 
 /** @brief Insert a thread (indicated by tid) to arraytcb
  *  
- *  Initialize a tcb structure for the thread.
- *  The program will first check if there is any existing stack that is 
- *  available, if not it will allocate a new stack slot for the thread.
+ *  It will instantiate a tcb structure for the new thread and try to insert it
+ *  to arraytcb. Then the program will check if there is any existing stack 
+ *  'slot' that is available by looking at array->avail_list, if not it will 
+ *  allocate a new stack 'slot' for the thread. double_array() will be invoked 
+ *  if there is no more space in arraytcb for new thread. 
+ *
+ *  Note that although arraytcb will be locked when insert a new thread, only 
+ *  the minimum amount of work is in critical section. Some expensive 
+ *  operations such as malloc() and free() are not in critical section.
  *  
  *  @param tid The tid of the new thread that need to be inserted
- *  @param is_newstack Also a return value, indicate if a new stack slot is 
- *  used for the new thread
+ *  @param mutex_arraytcb The mutex to protect arraytcb data structure so that 
+ *                        only one thread can access arraytcb at the same time.
  *
- *  @return The index of the stack that is used for the new thread
+ *  @return On success return a non-negative number which is the index of the 
+ *          stack 'slot' that is used for the new thread. On error -1 is 
+ *          returned.
  *          
- *
  */
 int arraytcb_insert_thread(int tid, mutex_t *mutex_arraytcb) {
+    // instantiate a tcb structure for the new thread
     tcb_t* new_thread = malloc(sizeof(tcb_t));
     if (!new_thread)
         return -1;
@@ -102,7 +123,9 @@ int arraytcb_insert_thread(int tid, mutex_t *mutex_arraytcb) {
 
     mutex_lock(mutex_arraytcb);
 
+    // check if there is any existing stack 'slot' that is available
     if (array->avail_list->next) {
+        // using an existing available stack 'slot' from array->avail_list
         availnode_t *tmp = array->avail_list->next;
         array->avail_list->next = array->avail_list->next->next;
         int index = tmp->index;
@@ -113,6 +136,7 @@ int arraytcb_insert_thread(int tid, mutex_t *mutex_arraytcb) {
         free(tmp);
         return index;
     } else {
+        // no available exisiting stack 'slot', allocate a new stack 'slot'
         if (array->cursize == array->maxsize){
             if (double_array(array) < 0) {
                 free(new_thread);
@@ -131,8 +155,12 @@ int arraytcb_insert_thread(int tid, mutex_t *mutex_arraytcb) {
 
 /** @brief Delete a thread from arraytcb
  *  
- *  After deletion, the stack that belonged to the deleted thread becomes 
- *  available for other threads to use.
+ *  After deletion, the stack 'slot' that belonged to the deleted thread becomes 
+ *  available for other threads to use. The program will insert the index of 
+ *  the stack to array->avail_list so that the next time 
+ *  arraytcb_insert_thread() can find this available stack is O(1) time.
+ *
+ *  This function should be invoked() when arraytcb is locked.
  *  
  *  @param index The stack index for the thread that need to be deleted
  *
@@ -166,6 +194,8 @@ int arraytcb_delete_thread(int index) {
 }
 
 /** @brief Get the tcb structure given an array index
+ *
+ *  arraytcb is unnecessary locked when this function is invoked.
  *  
  *  @param index Index of array to get tcb structure
  *
@@ -179,12 +209,14 @@ tcb_t* arraytcb_get_thread(int index) {
         return array->data[index];
 }
 
-/** @brief Find the index of a given thraed
+/** @brief Find the tcb structure of a given thraed
+ *
+ *  This function should be invoked() when arraytcb is locked.
  *  
  *  @param tid The tid of the thread that need to find its index
  *
- *  @return On success return the index of the thread, on error return
- *          NULL (can not find the thread in arraytcb)
+ *  @return On success return the pointer points to the tcb structure of the 
+ *          thread, on error return NULL (can not find the thread in arraytcb)
  *
  */
 tcb_t* arraytcb_find_thread(int tid) {
@@ -195,6 +227,17 @@ tcb_t* arraytcb_find_thread(int tid) {
     return NULL; 
 }
 
+/** @brief Set ktid to the tcb structure specified by index
+ *
+ *  arraytcb is unnecessary locked when this function is invoked.
+ *  
+ *  @param index Specify which tcb structure will set ktid
+ *  @param ktid The value of ktid (kernel tid) to set to tcb strcuture 
+ *
+ *  @return On success return zero, on error return -1 (can not find the tcb
+ *          structure specified by index)
+ *
+ */
 int arraytcb_set_ktid(int index, int ktid) {
     if (index >= array->cursize || !array->data[index])
         return -1;
@@ -223,13 +266,13 @@ void arraytcb_free() {
  *  
  *  @param index The index to check
  *
- *  @return 0 on success; -1 on error
+ *  @return Return 0 if index is not within the boundray; return 1 if it is in
  */
 int arraytcb_is_valid(int index) {
     if(index < 0 || index >= array->cursize) {
         return 0;
     } else {
-        return -1;
+        return 1;
     }
 }
 
