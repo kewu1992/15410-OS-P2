@@ -87,10 +87,6 @@ uint32_t get_new_stack_top(int index) {
         return ret;
     } 
 
-    if(index == 24) {
-        lprintf("first new page ret: %d", ret);
-    }
-
     if(num_pages > 1) {
         // Allocate middle pages, shouldn't fail since middle pages of this
         // stack region don't overlap with other threads' stack regions
@@ -99,9 +95,6 @@ uint32_t get_new_stack_top(int index) {
         if(ret) {
             return ret;
         }    
-        if(index == 24) {
-            lprintf("second new page ret: %d", ret);
-        }
     }
 
     if((new_thread_stack_low & PAGE_ALIGN_MASK) != 
@@ -113,24 +106,8 @@ uint32_t get_new_stack_top(int index) {
         if(ret && ret != ERROR_NEW_PAGES_OVERLAP_EXISTING_REGION) {
             return ret;
         } 
-        if(index == 24) {
-            lprintf("third new page ret: %d", ret);
-            lprintf("page start: %x, page end: %x", 
-                    (unsigned)(new_thread_stack_low & PAGE_ALIGN_MASK),
-                    (unsigned)((new_thread_stack_low & PAGE_ALIGN_MASK) + PAGE_SIZE));
-
-        }
     }
 
-    if(index == 24) {
-        lprintf("index 24: thread high: %x, thread low: %x",
-            (unsigned)new_thread_stack_high, (unsigned)new_thread_stack_low);
-    }
-
-    if(index == 23) {
-        lprintf("index 23: thread high: %x, thread low: %x",
-            (unsigned)new_thread_stack_high, (unsigned)new_thread_stack_low);
-    }
 /*
     uint32_t new_page_base = (root_thread_stack_low - 
             index * stack_size) & PAGE_ALIGN_MASK;
@@ -199,7 +176,7 @@ uint32_t get_pages_to_remove(int index, int *page_remove_info) {
     tcb_t *thr;
 
     // The page address where new_thread_stack_high is in
-    uint32_t new_thread_stack_high_page = new_thread_stack_low & PAGE_ALIGN_MASK;
+    uint32_t new_thread_stack_high_page = new_thread_stack_high & PAGE_ALIGN_MASK;
     uint32_t upper_stack_low = new_thread_stack_high + 1; 
     int can_remove = 1;
     int i = 0;

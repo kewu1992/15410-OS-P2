@@ -91,7 +91,6 @@ int thr_create(void *(*func)(void *), void *args) {
     uint32_t stack_addr = 0;
     
     int index = arraytcb_insert_thread(tid, &mutex_arraytcb);
-    lprintf("index is: %d", index);
 
     // allocate a stack with stack_size for new thread
     if ((stack_addr = (uint32_t)get_new_stack_top(index)) 
@@ -116,8 +115,6 @@ int thr_create(void *(*func)(void *), void *args) {
         lprintf("%d: thr_create_kernel() error", tid);
         return -2;
     }
-
-    lprintf("ktid is %d", (unsigned)child_ktid);
 
     mutex_lock(&mutex_arraytcb);
     tcb_t *thr = arraytcb_get_thread(index);
@@ -234,33 +231,6 @@ void thr_exit(void *status) {
     uint32_t ret = get_pages_to_remove(index, page_remove_info);
     if(ret < 0) {
         return;
-    }
-
-    /*if(index == 23) {
-        lprintf("About to call asm_thr_exit: base1: %x", page_remove_info[0]);
-        lprintf("is remove: %d", page_remove_info[1]);
-        lprintf("About to call asm_thr_exit: base2: %x", page_remove_info[2]);
-        lprintf("is remove: %d", page_remove_info[3]);
-        lprintf("About to call asm_thr_exit: base3: %x", page_remove_info[4]);
-        lprintf("is remove: %d", page_remove_info[5]);
-    }
-    */
-    if((unsigned)page_remove_info[0] == 0xfffea000 &&
-            page_remove_info[2] == 1) {
-        lprintf("index: %d", index);
-        MAGIC_BREAK;
-    }
-
-    if((unsigned)page_remove_info[2] == 0xfffea000 &&
-            page_remove_info[3] == 1) {
-        lprintf("index: %d", index);
-        MAGIC_BREAK;
-    }
-
-    if((unsigned)page_remove_info[4] == 0xfffea000 &&
-            page_remove_info[5] == 1) {
-        lprintf("index: %d", index);
-        MAGIC_BREAK;
     }
 
     // will call SPINLOCK_UNLOCK(&mutex_arraytcb->inner_lock) and vanish()
