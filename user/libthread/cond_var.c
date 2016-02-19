@@ -17,18 +17,25 @@ int cond_init(cond_t *cv) {
 }
 
 void cond_destroy(cond_t *cv) {
+    mutex_lock(&cv->mutex);
+
     if (!queue_is_active(&cv->deque)) {
         // try to destory a destroied cond_var
         panic("condition variable %p has already been destroied!", cv);
     }
-    mutex_destroy(&cv->mutex);
 
     while (queue_destroy(&cv->deque) < 0) {
         // illegal, some threads are blocked waiting on it
         lprintf("Destroy condition variable %p failed, some threads are blocking on it, will try again...", cv);
         printf("Destroy condition variable %p failed, some threads are blocking on it, will try again...\n", cv);
+        mutex_unlock(&cv->mutex);
         yield(-1);
+        mutex_lock(&cv->mutex);
     }
+
+    mutex_unlock(&cv->mutex);
+
+    mutex_destroy(&cv->mutex);
         
 }
 
@@ -95,9 +102,7 @@ void cond_broadcast(cond_t *cv) {
     while (tmp) {
         int tmp_ktid = tmp->ktid;
         tmp->reject = 1;
-        if (make_runnable(tmp_ktid) < 0) {
-            lprintf("QAQ");
-        }
+        make_runnable(tmp_ktid);
         tmp = dequeue(&cv->deque);
     }
     mutex_unlock(&cv->mutex);

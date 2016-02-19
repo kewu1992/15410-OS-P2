@@ -3,15 +3,17 @@
  *
  *  Arraytcb is a data structure to maintain metadata of user-level threads.
  *  Each element in the array of arraytcb represents a thread, it contains 
- *  information such as tid, thread state, etc. The index of the array
+ *  information such as tid, ktid, thread state, etc. The index of the array
  *  indicates the stack number that the thread is running on. For example,
  *  array[3]->data->tid == 2 means thread #2 is running on stack #3. At 
- *  beginning, master thread is running on stack 0. array[i] == NULL means
- *  stack i is not used by any thread.
+ *  beginning, master thread (tid == 0) is running on stack 0. 
+ *  array[i] == NULL means stack i is not used by any thread. Besides 
+ *  array->data[] there is another data structure array->avail_list which is a
+ *  linked list that stores all avilable (no be used by any thread) stack 'slot'
+ *  so that arraytcb_insert_thread() can be done in O(1) time. 
  *
  *
- *  @bug array shouldn't always be extended --> watch out malloc error 
- *       (not enough memory, VM/PM)
+ *  @bug no known bug
  */
 
 #include <stdlib.h>

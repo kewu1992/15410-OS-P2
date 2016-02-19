@@ -17,30 +17,39 @@ int mutex_init(mutex_t *mp) {
 }
 
 void mutex_destroy(mutex_t *mp) {
+    SPINLOCK_LOCK(&mp->inner_lock);
+
     if (mp->lock_available < 0) {
         // try to destroy a destroied mutex
         panic("mutex %p has already been destroied!", mp);
     }
-    while (!SPINLOCK_DESTROY(&mp->inner_lock)) {
+
+    while (mp->lock_available != 1) {
         // illegal, mutex is locked
         lprintf("Destroy mutex %p failed, mutex is locked, will try again...", mp);
         printf("Destroy mutex %p failed, mutex is locked, will try again...\n", mp);
+        SPINLOCK_UNLOCK(&mp->inner_lock);
         yield(-1);
+        SPINLOCK_LOCK(&mp->inner_lock);
     }
+
     while (queue_destroy(&mp->deque) < 0){
         // illegal, some threads are blocked waiting on it
-         // illegal, mutex is locked
+        // illegal, mutex is locked
         lprintf("Destroy mutex %p failed, some threads are blocking on it, will try again...", mp);
         printf("Destroy mutex %p failed, some threads are blocking on it, will try again...\n", mp);
+        SPINLOCK_UNLOCK(&mp->inner_lock);
         yield(-1);
+        SPINLOCK_LOCK(&mp->inner_lock);
     }
 
     mp->lock_available = -1;
+
+    SPINLOCK_UNLOCK(&mp->inner_lock);
 }
 
 void mutex_lock(mutex_t *mp) {
     SPINLOCK_LOCK(&mp->inner_lock);
-
     if (mp->lock_available < 0) {
         // try to lock a destroied mutex
         panic("mutex %p has already been destroied!", mp);
@@ -84,6 +93,7 @@ void mutex_unlock(mutex_t *mp) {
         printf("try to unlock an unlocked mutex %p, will wait until it is locked\n", mp);
         SPINLOCK_UNLOCK(&mp->inner_lock);
         yield(-1);
+        SPINLOCK_LOCK(&mp->inner_lock);
     }
 
     node_t *tmp = dequeue(&mp->deque);
