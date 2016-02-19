@@ -9,8 +9,8 @@
  *  beginning, master thread (tid == 0) is running on stack 0. 
  *  array[i] == NULL means stack i is not used by any thread. Besides 
  *  array->data[] there is another data structure array->avail_list which is a
- *  linked list that stores all avilable (no be used by any thread) stack 'slot'
- *  so that arraytcb_insert_thread() can be done in O(1) time. 
+ *  linked list that stores all avilable (no be used by any thread) stack 
+ *  'slot' so that arraytcb_insert_thread() can be done in O(1) time. 
  *
  *
  *  @bug no known bug
@@ -85,8 +85,8 @@ static int double_array() {
  *  available, if not it will allocate a new stack slot for the thread.
  *  
  *  @param tid The tid of the new thread that need to be inserted
- *  @param is_newstack Also a return value, indicate if a new stack slot is used
- *                     for the new thread
+ *  @param is_newstack Also a return value, indicate if a new stack slot is 
+ *  used for the new thread
  *
  *  @return The index of the stack that is used for the new thread
  *          
@@ -219,11 +219,17 @@ void arraytcb_free() {
     free(array);
 }
 
+/** @brief Check if index is within the boundry of the arraytcb
+ *  
+ *  @param index The index to check
+ *
+ *  @return 0 on success; -1 on error
+ */
 int arraytcb_is_valid(int index) {
     if(index < 0 || index >= array->cursize) {
         return 0;
     } else {
-        return 1;
+        return -1;
     }
 }
 

@@ -170,7 +170,8 @@ int thr_join(int tid, void **statusp) {
     if (is_find) {
         return 0;
     } else {
-        // Can not find exit status of tid in hash table, might already been reaped by other thread
+        // Can not find exit status of tid in hash table, might already been 
+        // reaped by other thread
         return -1;
     }
    
