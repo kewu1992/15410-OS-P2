@@ -30,12 +30,19 @@ typedef struct {
 } tcb_t;
 
 int arraytcb_init(int size);
+
 int arraytcb_insert_thread(int tid, mutex_t *mutex_arraytcb);
+
 int arraytcb_delete_thread(int index);
+
 tcb_t* arraytcb_get_thread(int index);
+
 tcb_t* arraytcb_find_thread(int tid);
+
 int arraytcb_set_ktid(int index, int ktid);
+
 void arraytcb_free();
+
 int arraytcb_is_valid(int index);
 
 #endif

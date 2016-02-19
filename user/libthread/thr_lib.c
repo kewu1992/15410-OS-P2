@@ -1,8 +1,13 @@
 /** @file thr_lib.c
  *  @brief This file contains implementation of thread management library 
  *
- *  @bug Better use spin lock for mutex_thread_count
- *       When on error, relesae resource (e.g. when thr_create() return -2)
+ *  This file contains thread management library including thr_init(), 
+ *  thr_create(), thr_join(), thr_exit(), thr_getid(), thr_getktid(), 
+ *  thr_yield(). Some functions will lock the entire arraytcb data strcuture to
+ *  avoid race condition although we have figured out that probably it is better
+ *  to allocate a mutex lock for each tcb structure to support more concurrency.
+ *
+ *  @bug No known bug
  */
 
 #include <stdlib.h>
@@ -18,10 +23,18 @@
 #include <arraytcb.h>
 #include <hashtable.h>
 
+/** @brief The initial size of arraytcb */
 #define INIT_THR_NUM 32
+
+/** @brief The size of hash table to stroe exit status */
 #define EXIT_HASH_SIZE 1021
 
+/** @brief The size of page_remove_info array */
 #define PAGE_REMOVE_INFO_SIZE 6 
+
+/** @brief It is an array for any threads to store which pages to remove 
+ *         when they invoke thr_exit(). More info please refer to 
+ *         thr_lib_helper.c get_pages_to_remove(). */
 static int page_remove_info[PAGE_REMOVE_INFO_SIZE];
 
 /** @brief The amount of stack space available for each thread */
@@ -33,18 +46,20 @@ static unsigned int thread_count;
 /** @brief Mutex to guard when calculating new stack positions */
 static mutex_t mutex_thread_count;
 
+/** @brief Mutex to protect arraytcb */
 static mutex_t mutex_arraytcb;
 
+/** @brief Hash table to store exit status of exiting thread */
 static hashtable_t hash_exit;
 
 /** @brief Initialize the thread library
  *
  *  @param size The amount of stack space which will be available for each 
- thread using the thread library
+ *              thread using the thread library
  *  @return On success return zero, on error return a negative number
  */
 int thr_init(unsigned int size) {
-    // From single thread program to multi-thread program, 
+    // From single thread program transfrom to multi-thread program, 
     // change the return address or main().
     set_rootthr_retaddr();
 
@@ -85,6 +100,7 @@ int thr_init(unsigned int size) {
  *          a negative number is returned
  */
 int thr_create(void *(*func)(void *), void *args) {
+    // calculate thread id
     mutex_lock(&mutex_thread_count);
     int tid = thread_count++;
     mutex_unlock(&mutex_thread_count);
@@ -117,6 +133,13 @@ int thr_create(void *(*func)(void *), void *args) {
         return -1;
     }
 
+    /* Set ktid for newly created thread. arraytcb_set_ktid() will be called 
+     * twice, one in thr_create() which is here and one in thr_create_kernel() 
+     * to make sure ktid is set for the new thread before any thread need the 
+     * info. When set ktid here, it must check if the stack belongs to the new 
+     * thread when the code is executing because the newly created thread may 
+     * already died and another thread is using the stack.
+     */
     mutex_lock(&mutex_arraytcb);
     tcb_t *thr = arraytcb_get_thread(index);
     if (thr && thr->tid == tid)
