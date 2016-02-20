@@ -1,5 +1,24 @@
-/** @file mutex.S
+/** @file mutex.c
  *  @brief Implementation of mutex
+ *
+ *  mutex_t contains the following fields
+ *     1. lock_available: it is an integer to indicate if the mutex lock is
+ *        available. lock_available == 1 means available (unlocked), 
+ *        lock_available == 0 means unavailable (locked).
+ *     2. inner_lock: a spinlock to protect critical section of mutex code.
+ *     3. deque: a double-ended queue to store the threads that are blocking on
+ *        the mutex. The queue is FIFO so first blocked thread will get the 
+ *        mutex first.
+ *
+ *  To achieve bounded waiting, a spinlock and a queue are used. Although 
+ *  spinlock itself doesn't satisfy bounded waitting, the critical section 
+ *  (which is the code of mutex) that protected by spinlock are guaranteed to 
+ *  be short. Becuase only when one thread is in the mutex code need to obtain
+ *  the spinlock. It is unlikely that there are always some threads that hold 
+ *  the spinlock of mutex. So it is better than we use spinlock (xchg) as 
+ *  implementation of mutex directly because we can not predict what the 
+ *  critical section mutex is trying to protect. So spinlock help mutex somewhat
+ *  approximate bounded waiting.
  *
  *  @author Ke Wu (kewu)
  *  @author Jian Wang (jianwan3)
@@ -54,7 +73,6 @@ void mutex_destroy(mutex_t *mp) {
 
     while (queue_destroy(&mp->deque) < 0){
         // illegal, some threads are blocked waiting on it
-        // illegal, mutex is locked
         lprintf("Destroy mutex %p failed, some threads are blocking on it, "
                 "will try again...", mp);
         printf("Destroy mutex %p failed, some threads are blocking on it, "
@@ -88,9 +106,11 @@ void mutex_lock(mutex_t *mp) {
     }
 
     if (mp->lock_available){
+        // mutex is unlocked, get the mutex lock directly and set it to locked
         mp->lock_available = 0;
         SPINLOCK_UNLOCK(&mp->inner_lock);
     } else {
+        // mutex is locked, enter the tail of queue to wait
         node_t *tmp = malloc(sizeof(node_t));
         while (!tmp) {
             lprintf("malloc failed, will try again...");
@@ -104,6 +124,9 @@ void mutex_lock(mutex_t *mp) {
         enqueue(&mp->deque, tmp);
 
         SPINLOCK_UNLOCK(&mp->inner_lock);
+
+        // while is necessary, reject is used to indicate if the thread has been
+        // dequeued by others
         while(!tmp->reject) {
             yield(-1);
         }
@@ -143,9 +166,12 @@ void mutex_unlock(mutex_t *mp) {
     node_t *tmp = dequeue(&mp->deque);
 
     if (!tmp) {
+        // no thread is waiting the mutex, set mutex as available 
         mp->lock_available = 1;
         SPINLOCK_UNLOCK(&mp->inner_lock);
     } else {
+        // some threads are waiting the mutex, awaken the thread in the head of
+        // queue
         int tmp_ktid = tmp->ktid;
         tmp->reject = 1;
         SPINLOCK_UNLOCK(&mp->inner_lock);
