@@ -1,0 +1,5834 @@
+%!PS-Adobe-3.0
+%%BoundingBox: 38 24 574 768
+%%Title: Enscript Output
+%%For: Jian Wang
+%%Creator: GNU Enscript 1.6.6
+%%CreationDate: Fri Feb 19 21:10:30 2016
+%%Orientation: Landscape
+%%Pages: (atend)
+%%DocumentMedia: Letter 612 792 0 () ()
+%%DocumentNeededResources: (atend)
+%%EndComments
+%%BeginProlog
+%%BeginResource: procset Enscript-Prolog 1.6 6
+%
+% Procedures.
+%
+
+/_S {	% save current state
+  /_s save def
+} def
+/_R {	% restore from saved state
+  _s restore
+} def
+
+/S {	% showpage protecting gstate
+  gsave
+  showpage
+  grestore
+} bind def
+
+/MF {	% fontname newfontname -> -	make a new encoded font
+  /newfontname exch def
+  /fontname exch def
+
+  /fontdict fontname findfont def
+  /newfont fontdict maxlength dict def
+
+  fontdict {
+    exch
+    dup /FID eq {
+      % skip FID pair
+      pop pop
+    } {
+      % copy to the new font dictionary
+      exch newfont 3 1 roll put
+    } ifelse
+  } forall
+
+  newfont /FontName newfontname put
+
+  % insert only valid encoding vectors
+  encoding_vector length 256 eq {
+    newfont /Encoding encoding_vector put
+  } if
+
+  newfontname newfont definefont pop
+} def
+
+/MF_PS { % fontname newfontname -> -	make a new font preserving its enc
+  /newfontname exch def
+  /fontname exch def
+
+  /fontdict fontname findfont def
+  /newfont fontdict maxlength dict def
+
+  fontdict {
+    exch
+    dup /FID eq {
+      % skip FID pair
+      pop pop
+    } {
+      % copy to the new font dictionary
+      exch newfont 3 1 roll put
+    } ifelse
+  } forall
+
+  newfont /FontName newfontname put
+
+  newfontname newfont definefont pop
+} def
+
+/SF { % fontname width height -> -	set a new font
+  /height exch def
+  /width exch def
+
+  findfont
+  [width 0 0 height 0 0] makefont setfont
+} def
+
+/SUF { % fontname width height -> -	set a new user font
+  /height exch def
+  /width exch def
+
+  /F-gs-user-font MF
+  /F-gs-user-font width height SF
+} def
+
+/SUF_PS { % fontname width height -> -	set a new user font preserving its enc
+  /height exch def
+  /width exch def
+
+  /F-gs-user-font MF_PS
+  /F-gs-user-font width height SF
+} def
+
+/M {moveto} bind def
+/s {show} bind def
+
+/Box {	% x y w h -> -			define box path
+  /d_h exch def /d_w exch def /d_y exch def /d_x exch def
+  d_x d_y  moveto
+  d_w 0 rlineto
+  0 d_h rlineto
+  d_w neg 0 rlineto
+  closepath
+} def
+
+/bgs {	% x y height blskip gray str -> -	show string with bg color
+  /str exch def
+  /gray exch def
+  /blskip exch def
+  /height exch def
+  /y exch def
+  /x exch def
+
+  gsave
+    x y blskip sub str stringwidth pop height Box
+    gray setgray
+    fill
+  grestore
+  x y M str s
+} def
+
+/bgcs { % x y height blskip red green blue str -> -  show string with bg color
+  /str exch def
+  /blue exch def
+  /green exch def
+  /red exch def
+  /blskip exch def
+  /height exch def
+  /y exch def
+  /x exch def
+
+  gsave
+    x y blskip sub str stringwidth pop height Box
+    red green blue setrgbcolor
+    fill
+  grestore
+  x y M str s
+} def
+
+% Highlight bars.
+/highlight_bars {	% nlines lineheight output_y_margin gray -> -
+  gsave
+    setgray
+    /ymarg exch def
+    /lineheight exch def
+    /nlines exch def
+
+    % This 2 is just a magic number to sync highlight lines to text.
+    0 d_header_y ymarg sub 2 sub translate
+
+    /cw d_output_w cols div def
+    /nrows d_output_h ymarg 2 mul sub lineheight div cvi def
+
+    % for each column
+    0 1 cols 1 sub {
+      cw mul /xp exch def
+
+      % for each rows
+      0 1 nrows 1 sub {
+        /rn exch def
+        rn lineheight mul neg /yp exch def
+        rn nlines idiv 2 mod 0 eq {
+	  % Draw highlight bar.  4 is just a magic indentation.
+	  xp 4 add yp cw 8 sub lineheight neg Box fill
+	} if
+      } for
+    } for
+
+  grestore
+} def
+
+% Line highlight bar.
+/line_highlight {	% x y width height gray -> -
+  gsave
+    /gray exch def
+    Box gray setgray fill
+  grestore
+} def
+
+% Column separator lines.
+/column_lines {
+  gsave
+    .1 setlinewidth
+    0 d_footer_h translate
+    /cw d_output_w cols div def
+    1 1 cols 1 sub {
+      cw mul 0 moveto
+      0 d_output_h rlineto stroke
+    } for
+  grestore
+} def
+
+% Column borders.
+/column_borders {
+  gsave
+    .1 setlinewidth
+    0 d_footer_h moveto
+    0 d_output_h rlineto
+    d_output_w 0 rlineto
+    0 d_output_h neg rlineto
+    closepath stroke
+  grestore
+} def
+
+% Do the actual underlay drawing
+/draw_underlay {
+  ul_style 0 eq {
+    ul_str true charpath stroke
+  } {
+    ul_str show
+  } ifelse
+} def
+
+% Underlay
+/underlay {	% - -> -
+  gsave
+    0 d_page_h translate
+    d_page_h neg d_page_w atan rotate
+
+    ul_gray setgray
+    ul_font setfont
+    /dw d_page_h dup mul d_page_w dup mul add sqrt def
+    ul_str stringwidth pop dw exch sub 2 div ul_h_ptsize -2 div moveto
+    draw_underlay
+  grestore
+} def
+
+/user_underlay {	% - -> -
+  gsave
+    ul_x ul_y translate
+    ul_angle rotate
+    ul_gray setgray
+    ul_font setfont
+    0 0 ul_h_ptsize 2 div sub moveto
+    draw_underlay
+  grestore
+} def
+
+% Page prefeed
+/page_prefeed {		% bool -> -
+  statusdict /prefeed known {
+    statusdict exch /prefeed exch put
+  } {
+    pop
+  } ifelse
+} def
+
+% Wrapped line markers
+/wrapped_line_mark {	% x y charwith charheight type -> -
+  /type exch def
+  /h exch def
+  /w exch def
+  /y exch def
+  /x exch def
+
+  type 2 eq {
+    % Black boxes (like TeX does)
+    gsave
+      0 setlinewidth
+      x w 4 div add y M
+      0 h rlineto w 2 div 0 rlineto 0 h neg rlineto
+      closepath fill
+    grestore
+  } {
+    type 3 eq {
+      % Small arrows
+      gsave
+        .2 setlinewidth
+        x w 2 div add y h 2 div add M
+        w 4 div 0 rlineto
+        x w 4 div add y lineto stroke
+
+        x w 4 div add w 8 div add y h 4 div add M
+        x w 4 div add y lineto
+	w 4 div h 8 div rlineto stroke
+      grestore
+    } {
+      % do nothing
+    } ifelse
+  } ifelse
+} def
+
+% EPSF import.
+
+/BeginEPSF {
+  /b4_Inc_state save def    		% Save state for cleanup
+  /dict_count countdictstack def	% Count objects on dict stack
+  /op_count count 1 sub def		% Count objects on operand stack
+  userdict begin
+  /showpage { } def
+  0 setgray 0 setlinecap
+  1 setlinewidth 0 setlinejoin
+  10 setmiterlimit [ ] 0 setdash newpath
+  /languagelevel where {
+    pop languagelevel
+    1 ne {
+      false setstrokeadjust false setoverprint
+    } if
+  } if
+} bind def
+
+/EndEPSF {
+  count op_count sub { pos } repeat	% Clean up stacks
+  countdictstack dict_count sub { end } repeat
+  b4_Inc_state restore
+} bind def
+
+% Check PostScript language level.
+/languagelevel where {
+  pop /gs_languagelevel languagelevel def
+} {
+  /gs_languagelevel 1 def
+} ifelse
+%%EndResource
+%%BeginResource: procset Enscript-Encoding-88591 1.6 6
+/encoding_vector [
+/.notdef      	/.notdef      	/.notdef      	/.notdef      	
+/.notdef      	/.notdef      	/.notdef      	/.notdef      	
+/.notdef      	/.notdef      	/.notdef      	/.notdef      	
+/.notdef      	/.notdef      	/.notdef      	/.notdef      	
+/.notdef      	/.notdef      	/.notdef      	/.notdef      	
+/.notdef      	/.notdef      	/.notdef      	/.notdef      	
+/.notdef      	/.notdef      	/.notdef      	/.notdef      	
+/.notdef      	/.notdef      	/.notdef      	/.notdef      	
+/space        	/exclam       	/quotedbl     	/numbersign   	
+/dollar       	/percent      	/ampersand    	/quoteright   	
+/parenleft    	/parenright   	/asterisk     	/plus         	
+/comma        	/hyphen       	/period       	/slash        	
+/zero         	/one          	/two          	/three        	
+/four         	/five         	/six          	/seven        	
+/eight        	/nine         	/colon        	/semicolon    	
+/less         	/equal        	/greater      	/question     	
+/at           	/A            	/B            	/C            	
+/D            	/E            	/F            	/G            	
+/H            	/I            	/J            	/K            	
+/L            	/M            	/N            	/O            	
+/P            	/Q            	/R            	/S            	
+/T            	/U            	/V            	/W            	
+/X            	/Y            	/Z            	/bracketleft  	
+/backslash    	/bracketright 	/asciicircum  	/underscore   	
+/quoteleft    	/a            	/b            	/c            	
+/d            	/e            	/f            	/g            	
+/h            	/i            	/j            	/k            	
+/l            	/m            	/n            	/o            	
+/p            	/q            	/r            	/s            	
+/t            	/u            	/v            	/w            	
+/x            	/y            	/z            	/braceleft    	
+/bar          	/braceright   	/tilde        	/.notdef      	
+/.notdef      	/.notdef      	/.notdef      	/.notdef      	
+/.notdef      	/.notdef      	/.notdef      	/.notdef      	
+/.notdef      	/.notdef      	/.notdef      	/.notdef      	
+/.notdef      	/.notdef      	/.notdef      	/.notdef      	
+/.notdef      	/.notdef      	/.notdef      	/.notdef      	
+/.notdef      	/.notdef      	/.notdef      	/.notdef      	
+/.notdef      	/.notdef      	/.notdef      	/.notdef      	
+/.notdef      	/.notdef      	/.notdef      	/.notdef      	
+/space        	/exclamdown   	/cent         	/sterling     	
+/currency     	/yen          	/brokenbar    	/section      	
+/dieresis     	/copyright    	/ordfeminine  	/guillemotleft	
+/logicalnot   	/hyphen       	/registered   	/macron       	
+/degree       	/plusminus    	/twosuperior  	/threesuperior	
+/acute        	/mu           	/paragraph    	/bullet       	
+/cedilla      	/onesuperior  	/ordmasculine 	/guillemotright	
+/onequarter   	/onehalf      	/threequarters	/questiondown 	
+/Agrave       	/Aacute       	/Acircumflex  	/Atilde       	
+/Adieresis    	/Aring        	/AE           	/Ccedilla     	
+/Egrave       	/Eacute       	/Ecircumflex  	/Edieresis    	
+/Igrave       	/Iacute       	/Icircumflex  	/Idieresis    	
+/Eth          	/Ntilde       	/Ograve       	/Oacute       	
+/Ocircumflex  	/Otilde       	/Odieresis    	/multiply     	
+/Oslash       	/Ugrave       	/Uacute       	/Ucircumflex  	
+/Udieresis    	/Yacute       	/Thorn        	/germandbls   	
+/agrave       	/aacute       	/acircumflex  	/atilde       	
+/adieresis    	/aring        	/ae           	/ccedilla     	
+/egrave       	/eacute       	/ecircumflex  	/edieresis    	
+/igrave       	/iacute       	/icircumflex  	/idieresis    	
+/eth          	/ntilde       	/ograve       	/oacute       	
+/ocircumflex  	/otilde       	/odieresis    	/divide       	
+/oslash       	/ugrave       	/uacute       	/ucircumflex  	
+/udieresis    	/yacute       	/thorn        	/ydieresis    	
+] def
+%%EndResource
+%%EndProlog
+%%BeginSetup
+%%IncludeResource: font Courier-Bold
+%%IncludeResource: font Courier
+/HFpt_w 10 def
+/HFpt_h 10 def
+/Courier-Bold /HF-gs-font MF
+/HF /HF-gs-font findfont [HFpt_w 0 0 HFpt_h 0 0] makefont def
+/Courier /F-gs-font MF
+/F-gs-font 7 7 SF
+/#copies 1 def
+% Pagedevice definitions:
+gs_languagelevel 1 gt {
+  <<
+    /PageSize [612 792] 
+  >> setpagedevice
+} if
+%%BeginResource: procset Enscript-Header-enscript 1.6 6
+%%IncludeResource: font Times-Bold
+%%IncludeResource: font Times-Roman
+
+% Fonts.
+/Times-Bold /HeaderFont-Bold MF
+/HeaderDateF /HeaderFont-Bold findfont 12 scalefont def
+
+/Times-Roman /HeaderFont-Times MF
+/HeaderHDRF /HeaderFont-Times findfont 14 scalefont def
+
+/HeaderPageNumF /Helvetica-Bold findfont 28.8 scalefont def
+
+/do_header {	% print enscript header
+  gsave
+    d_header_x d_header_y translate
+
+    % light bar
+    0 0 d_header_w d_header_h 2 div Box
+    .95 setgray fill
+
+    % dark gray boxes
+    /dbw d_header_h 2 mul def	% dark box width
+    /dbc .7 def			% dark box color
+
+    % left dark box.
+    0 0 dbw d_header_h Box
+    dbc setgray fill
+
+    0 setgray 
+    HeaderDateF setfont
+    moddatestr dup stringwidth pop dbw exch sub 2 div 
+    d_header_h 2 div 2 add moveto show
+    modtimestr dup stringwidth pop dbw exch sub 2 div 
+    d_header_h 5 div moveto show
+
+    % right dark box
+    d_header_w dbw sub 0 dbw d_header_h Box
+    dbc setgray fill
+
+    HeaderPageNumF setfont
+    1 setgray
+    pagenumstr dup
+    stringwidth pop dbw exch sub 2 div d_header_w dbw sub add
+    d_header_h .2 mul moveto show
+
+    % filename
+    0 setgray 
+    HeaderHDRF setfont
+    d_header_w fname stringwidth pop sub 2 div d_header_h 8 div moveto
+    fname show
+
+    % user supplied header string.
+    user_header_p {
+      /h d_header_h 8 div 5 mul def
+
+      % Implement strict enscript compatibility.
+      user_header_center_str () eq user_header_right_str () eq and {
+        d_header_w user_header_left_str stringwidth pop sub 2 div 
+        h moveto user_header_left_str show
+      } {
+        dbw 5 add h moveto user_header_left_str show
+
+        d_header_w user_header_center_str stringwidth pop sub 2 div 
+        h moveto user_header_center_str show
+
+	d_header_w dbw sub 5 sub user_header_right_str stringwidth pop
+	sub h moveto user_header_right_str show
+      } ifelse
+    } if
+
+  grestore
+} def
+%%EndResource
+/d_page_w 744 def
+/d_page_h 536 def
+/d_header_x 0 def
+/d_header_y 500 def
+/d_header_w 744 def
+/d_header_h 36 def
+/d_footer_x 0 def
+/d_footer_y 0 def
+/d_footer_w 744 def
+/d_footer_h 0 def
+/d_output_w 744 def
+/d_output_h 500 def
+/cols 2 def
+%%EndSetup
+%%Page: (1) 1
+%%BeginPageSetup
+_S
+90 rotate
+24 -574 translate
+/pagenum 1 def
+/fname (README.dox) def
+/fdir (.) def
+/ftail (README.dox) def
+% User defined strings:
+/pagenumstr (1) def
+/moddatestr (02/19/16) def
+/modtimestr (20:49:13) def
+/user_header_p false def
+/user_footer_p false def
+%%EndPageSetup
+column_lines
+do_header
+5 490 M
+(/**) s
+5 474 M
+(@mainpage 15-410 Project 2) s
+5 458 M
+(@author Jian Wang \(jianwan3\)) s
+5 450 M
+(@author Ke Wu \(kewu\)) s
+5 434 M
+(1. Mutex: ) s
+5 426 M
+(Mutex is a low level construct that serves the purpose of mutual exclusion.) s
+5 418 M
+(We have devised both a basic spinlock mutex and an advanced mutex that ) s
+5 410 M
+(approximates bounded waiting. ) s
+5 394 M
+(1.1 Spinlock: ) s
+5 386 M
+(The spinlock mutex is used in basic libraries like malloc and serves as the ) s
+5 378 M
+(inner lock of the advanced mutex. It simply tries to acqure a lock \(using xchg\) ) s
+5 370 M
+(for a limited times until it defers trying through yielding. The design ) s
+5 362 M
+(choice related to it is whether to yield immediately if a lock is not ) s
+5 354 M
+(available. In a single core machine, if a lock is not available, then it's ) s
+5 346 M
+(likely other thread not running is holding the lock, so the current thread ) s
+5 338 M
+(should yield immediately; in a multi-core machine, the thread that is holding ) s
+5 330 M
+(the lock may be running as well and is likely to release the lock in a short ) s
+5 322 M
+(time, so it makes sense for the current thread to try acquring for a few times) s
+5 314 M
+(instead of yielding immediately. To adapt to work well in a multi-threaded ) s
+5 306 M
+(environment, our spinlock tries a few times before it yields.) s
+5 290 M
+(1.2 Advanced mutex approximating bounded waiting: ) s
+5 282 M
+(The advanced mutex uses a FIFO queue to manage threads that want the lock object) s
+5 274 M
+(and a spinlock as an inner lock to guard against accesses to the queue and ) s
+5 266 M
+(the mutex object. When a thread tries to acquire a mutex lock and can't make it) s
+5 258 M
+(because other thread is holding it, it enqueues itself to the waiting queue,) s
+5 250 M
+(yields itself and checks for lock availability next time it awakes. When the ) s
+5 242 M
+(lock holder thread unlocks the mutex, it deques the first thread in the ) s
+5 234 M
+(waiting queue of the lock, and yields the exection to it. The advanced mutex) s
+5 226 M
+(achives bounded waiting through the usage of a waiting queue) s
+5 218 M
+(and a spinlock. Although spinlock itself doesn't satisfy bounded waitting, ) s
+5 210 M
+(the critical section \(which is the code of advanced mutex\) that protected by ) s
+5 202 M
+(spinlock are guaranteed to be short. Becuase only when one thread is in the ) s
+5 194 M
+(advanced mutex code need to obtain the spinlock. It is unlikely that there are) s
+5 186 M
+(always some threads that hold the spinlock of mutex. So it is better than we use) s
+5 178 M
+(spinlock \(xchg\) as implementation of mutex directly because we can not predict ) s
+5 170 M
+(what the critical section mutex is trying to protect. So spinlock help mutex ) s
+5 162 M
+(somewhat approximate bounded waiting.) s
+5 146 M
+(2. Condition variable: ) s
+5 138 M
+(A condition variable is used to wait for an event with efficiency by ) s
+5 130 M
+(relinquishing CPU voluntarily to other threads until the event changes ) s
+5 122 M
+(signals. In our implementation, it uses a mutex to guard against its accessing ) s
+5 114 M
+(to the waiting FIFO queue, which contains the threads that are waiting for an ) s
+5 106 M
+(event to change. There are race conditions involved when threads dechedule to ) s
+5 98 M
+(wait for an event and when threads make others runnable to signal an event. The ) s
+5 90 M
+(atomicity is achieved through the usage of a flag called reject and syscall ) s
+5 82 M
+(deschedule\(reject\).) s
+5 66 M
+(3. Semaphore: ) s
+5 58 M
+(A semaphore is implemented with mutex, condition variable, and a counter. ) s
+5 50 M
+(The counter gives the idea of how many resources are left. The mutex is used ) s
+5 42 M
+(to guard against accessing and modifying counter, while the condition variable) s
+5 34 M
+(blocks and signals threads when there's no resources left.) s
+5 18 M
+(4. Readers/writers locks: ) s
+5 2 M
+(Our implementation favors writer locks. The drawback of this approach may be ) s
+377 490 M
+(that readers may be starved, though. ) s
+377 474 M
+(To achieve our goal, rwlock uses a variable lock_state to store the state of the) s
+377 466 M
+(rwlock \(unlocked, shared, exclusive, destroied\). It also records how many ) s
+377 458 M
+(readers and/or writers are waiting for the rwlock. When a new lock\(\) request ) s
+377 450 M
+(comes in, rwlock will decide whether to block the thread based on the lock type) s
+377 442 M
+(it requests, the state of the rwlock and how many readers/writers are waiting. ) s
+377 434 M
+(Similarly, when a thread unlock\(\), rwlock will decide who will get the lock next) s
+377 426 M
+(based on the info above. To achieve blocking, two conditional variables are) s
+377 418 M
+(used for readers and writers. To protect rwlock data structre, a mutex is used.) s
+377 402 M
+(5. Thread library: ) s
+377 386 M
+(5.1 Data structures related to thread management: ) s
+377 378 M
+(An expandable array called arraytcb is used to manage thread's information.) s
+377 370 M
+(Each thread has an associated tcb \(thread control block\) to manage it. The ) s
+377 362 M
+(tcb of a thread contains information like: state \(RUNNING, JOINED\), ktid ) s
+377 354 M
+(\(thread id in the kernel side\), tid \(Thread id used by the thread lib, ) s
+377 346 M
+(increamented monotonically with the root thread's tid as 0, the first new ) s
+377 338 M
+(thread's tid as 1, the second as 2, etc\), and a condition variable for it ) s
+377 330 M
+(\(so that other threads can join on it\).) s
+377 314 M
+(When a thread is created, its personal tcb is created and inserted into the) s
+377 306 M
+(arraytcb. Later, the thread's information can be achieved from the arraytcb) s
+377 298 M
+(using its index, which is the same as its stack position index. Because stack ) s
+377 290 M
+(position index of the current thread can be calculated easily \(by looking at the) s
+377 282 M
+(value of %esp and do some math\), it gives an very efficient way to impelement) s
+377 274 M
+(thr_getid\(\) and thr_getktid\(\).) s
+377 258 M
+(A hashtable is used to manage threads's exit status. When a thread exits, ) s
+377 250 M
+(either by explicitly calling thr_exit\(\), or returns directly, thr_exit\(\) will ) s
+377 242 M
+(be called anyway to delete the tcb of the thread in the arraytcb, put in ) s
+377 234 M
+(the hashtable with thread id as key, and return value as value. The stack ) s
+377 226 M
+(space of the exiting thread is released immediately by remove_pages\(\) ) s
+377 218 M
+(except the pages that are shared by other alive threads. Later, when a thread ) s
+377 210 M
+(joins other thread, it will look up the hashtable to get the exit status of ) s
+377 202 M
+(the thread.) s
+377 186 M
+(5.2 Stack space: ) s
+377 178 M
+(Thread stack space management: ) s
+377 170 M
+(Each thread's stack space is ajacent to each other, with the highest stack) s
+377 162 M
+(being originally the root thread's stack. Each thread get's an index) s
+377 154 M
+(specifying where its stack region is when it's created. The index) s
+377 146 M
+(is determined by the current available slots on the stack, which corresponds) s
+377 138 M
+(to an available slot in the arraytcb. After the index is assigned, the pages) s
+377 130 M
+(of the thread's stack region are allocated and the thread's stack pointer is) s
+377 122 M
+(set to the top of its private stack. ) s
+377 106 M
+(To achieve memory-efficient thr_exit\(\), the stack space of the exiting thread ) s
+377 98 M
+(will be deallcated at the end of thr_exit\(\) so that "zombie thread" will not) s
+377 90 M
+(hold onto large amounts of memory. we use a hash table to store the exit) s
+377 82 M
+(status of the exiting thread. ) s
+377 66 M
+(Stack memory management: ) s
+377 58 M
+(Stack spaces are allocated through new_pages\(\) syscall each time a new thread) s
+377 50 M
+(is created and removed through remove_pages\(\) syscall when it exits. Our) s
+377 42 M
+(implementation favors this approach over the one that preserves allocated ) s
+377 34 M
+(stack spaces for future threads' use without deallocating them until the) s
+377 26 M
+(entire task vanishes, for the reason that though there may be some overhead) s
+377 18 M
+(of repetedly calling syscalls of new_pages\(\) and remove_pages\(\), in the real) s
+377 10 M
+(application usage, if the user application is a long running program like a ) s
+377 2 M
+(server or database, it may ocasionally create a lot of worker threads that) s
+_R
+S
+%%Page: (2) 2
+%%BeginPageSetup
+_S
+90 rotate
+24 -574 translate
+/pagenum 2 def
+/fname (README.dox) def
+/fdir (.) def
+/ftail (README.dox) def
+% User defined strings:
+/pagenumstr (2) def
+/moddatestr (02/19/16) def
+/modtimestr (20:49:13) def
+/user_header_p false def
+/user_footer_p false def
+%%EndPageSetup
+column_lines
+do_header
+5 490 M
+(will exit after their works are done, but itself, the root thread, will live) s
+5 482 M
+(for a long time and the task will not vanish, thus the previously allocated) s
+5 474 M
+(stack space for work threads will be held by this task wastefully, and no) s
+5 466 M
+(other tasks can use these spaces until the server or database vanishes.) s
+5 450 M
+(Autostack for single root thread: ) s
+5 442 M
+(Autostack is supported for single-threaded programs. The root thread's stack) s
+5 434 M
+(can grow down beyond the orinal limit allocated by the kernel until there's) s
+5 426 M
+(not enough memory resources. This function is achieved through the usage of ) s
+5 418 M
+(an exception handler dedicated to page fault caused by accessing memory ) s
+5 410 M
+(outside of stack space previously allocated. The exception handler is) s
+5 402 M
+(registered for the root thread at the entry point of the program and ) s
+5 394 M
+(re-registered again after it handles a fixable page fault opearation on ) s
+5 386 M
+(the stack. Autostack is disabled when a new thread is created and the program ) s
+5 378 M
+(enters multi-threaded mode. The root thread's stack low will become fixated ) s
+5 370 M
+(and will not be extended any more. If in the future the root thread uses more ) s
+5 362 M
+(space than its current max stack size and causes a page fault, the kernel) s
+5 354 M
+(will handle it instead of the user exception handler.) s
+5 338 M
+(Tricky parts of thr_create\(\) and thr_exit\(\): ) s
+5 330 M
+(When create a new thread and a thread is about to exit, there are some time that) s
+5 322 M
+(no stack can be used by the thread. For example, after execute thread_fork, new) s
+5 314 M
+(thread can not use the stack of the original thread, and after execute ) s
+5 306 M
+(remove_page\(\), stack region is deallocated. So some code of thr_create\(\) and ) s
+5 298 M
+(thr_exit\(\) must wirtten in assembly to avoid using stack. Instead, a limit) s
+5 290 M
+(number of registers are used to finish the jobs.) s
+5 274 M
+(5.3 Function call failure handling: ) s
+5 266 M
+(For function calls that have a non-void return type, we report the error to ) s
+5 258 M
+(callers. For function calls that have a void return type, ) s
+5 250 M
+(For some situations that it is possible to recover \(e.g. malloc calls, lock an) s
+5 242 M
+(unlocked mutex\) we print a log message, wait a while and retry. Because it is ) s
+5 234 M
+(possiable that memory becomes enough for malloc or mutex is locked by other ) s
+5 226 M
+(threads. For some situations that it is impossible to recover \(e.g. try to use) s
+5 218 M
+(a destroied mutex\), the program will call panic\(\). ) s
+5 202 M
+(5.4 Thr_exit for root thread: ) s
+5 194 M
+(Ideally, root thread of multi-thread program should also call thr_exit\(\) to get) s
+5 186 M
+(its return status collected by other threads join on it, but there's no ) s
+5 178 M
+(guarantee the root thread will do so. So our implementation modifies the return) s
+5 170 M
+(address of the root thread's main in thr_init\(\) to achieve this purpose.) s
+5 154 M
+(6. Discussions: ) s
+5 138 M
+(6.1 Buffer zone: ) s
+5 130 M
+(In the current implementation, stack spaces of different threads are ajacent) s
+5 122 M
+(to each other without a "buffer zone", say, a page that doesn't belong to) s
+5 114 M
+(any thread. In other words, there's no protection and warning if a thread ) s
+5 106 M
+(accesses stack space that doesn't belong to it due to stack autogrwoing and ) s
+5 98 M
+(that stack space happenes to have been allocated for another thread. Although, ) s
+5 90 M
+(a thread can always access other's stack space if it really wants to by skipping) s
+5 82 M
+(the buffer zone, but the idea of buffer zone gives protection to some extent.) s
+5 66 M
+(6.2 Multi-threaded autostack: ) s
+5 58 M
+(The other idea we have considered but not implemented is mutlti-threaded) s
+5 50 M
+(autostack. The idea is to allocate exact amout of virtual address space that) s
+5 42 M
+(each thread asks for, but at most one page physical space initially for each ) s
+5 34 M
+(thread and only after it uses more than that amount of memory do we give them ) s
+5 26 M
+(more. This approach is likely to work well in a running environment with ) s
+5 18 M
+(limited physical space that needs a lot of threads set with large stack size ) s
+5 10 M
+(but don't actually use that many.) s
+377 490 M
+(6.3 TCB with more granularity: ) s
+377 482 M
+(One of the goals of the thread library is to achieve high concurrency) s
+377 474 M
+(with thread-safety. Currently, many thread lib operations needs to access) s
+377 466 M
+(and modify arraytcb, which is a concurrency bottle neck in the sense that the) s
+377 458 M
+(the arraytcb is guarded by a single mutex. A better approach would be to) s
+377 450 M
+(have a private mutex for each tcb, which will increase memory usage as a side ) s
+377 442 M
+(effect though.) s
+377 418 M
+(*/) s
+_R
+S
+%%Page: (1) 3
+%%BeginPageSetup
+_S
+90 rotate
+24 -574 translate
+/pagenum 1 def
+/fname (./user/libthread/arraytcb.c) def
+/fdir (./user/libthread) def
+/ftail (arraytcb.c) def
+% User defined strings:
+/pagenumstr (1) def
+/moddatestr (02/19/16) def
+/modtimestr (20:42:57) def
+/user_header_p false def
+/user_footer_p false def
+%%EndPageSetup
+column_lines
+do_header
+5 490 M
+(/** @file arraytcb.c) s
+5 482 M
+( *  @brief This file contains implementation of arraytcb) s
+5 474 M
+( *) s
+5 466 M
+( *  Arraytcb is a data structure to maintain metadata of user-level threads.) s
+5 458 M
+( *  Each element in the array of arraytcb represents a thread, it contains ) s
+5 450 M
+( *  information such as tid, ktid, thread state, etc. The index of the array) s
+5 442 M
+( *  indicates the stack number that the thread is running on. For example,) s
+5 434 M
+( *  array[3]->data->tid == 2 means thread #2 is running on stack #3. At ) s
+5 426 M
+( *  beginning, master thread \(tid == 0\) is running on stack 0. ) s
+5 418 M
+( *  array[i] == NULL means stack i is not used by any thread. Besides ) s
+5 410 M
+( *  array->data[] there is another data structure array->avail_list which is a) s
+5 402 M
+( *  linked list that stores all avilable \(no be used by any thread\) stack ) s
+5 394 M
+( *  'slot' so that arraytcb_insert_thread\(\) can be done in O\(1\) time. ) s
+5 386 M
+( *) s
+5 378 M
+( *  @author Ke Wu <kewu@andrew.cmu.edu>) s
+5 370 M
+( *  @bug no known bug) s
+5 362 M
+( */) s
+5 346 M
+(#include <stdlib.h>) s
+5 338 M
+(#include <stdio.h>) s
+5 330 M
+(#include <simics.h>) s
+5 314 M
+(#include <cond.h>) s
+5 306 M
+(#include <mutex.h>) s
+5 298 M
+(#include <arraytcb.h>) s
+5 282 M
+(/** @brief An array to manage tcbs */) s
+5 274 M
+(static struct arraytcb_s *array;) s
+5 258 M
+(/** @brief Initialize arraytcb data structure) s
+5 250 M
+( *  ) s
+5 242 M
+( *  @param size The initial size of arraytcb) s
+5 234 M
+( *) s
+5 226 M
+( *  @return On success return 0, on error return -1) s
+5 218 M
+( *) s
+5 210 M
+( */) s
+5 202 M
+(int arraytcb_init\(int size\) {) s
+5 194 M
+(    if \(size <= 0\)) s
+5 186 M
+(        return -1;) s
+5 178 M
+(    array = malloc\(sizeof\(struct arraytcb_s\)\);) s
+5 170 M
+(    if \(!array\)) s
+5 162 M
+(        return -1;) s
+5 154 M
+(    array->maxsize = size;) s
+5 146 M
+(    array->cursize = 0;) s
+5 138 M
+(    array->data = calloc\(size, sizeof\(tcb_t*\)\);) s
+5 122 M
+(    array->avail_list = malloc\(sizeof\(availnode_t\)\);) s
+5 114 M
+(    if \(!array->avail_list\)) s
+5 106 M
+(        return -1;) s
+5 98 M
+(    array->avail_list->next = NULL;) s
+5 90 M
+(    return 0;) s
+5 82 M
+(}) s
+5 66 M
+(/** @brief Double the size of arrarytcb) s
+5 58 M
+( *) s
+5 50 M
+( *  When array->cursize == array->maxsize, this function will be invoked to ) s
+5 42 M
+( *  double the size of arraytcb.) s
+5 34 M
+( *) s
+5 26 M
+( *  @return On success return 0, on error return -1) s
+5 18 M
+( */) s
+5 10 M
+(static int double_array\(\) {) s
+5 2 M
+(    int newsize = array->maxsize * 2;) s
+377 490 M
+(    tcb_t** newdata = calloc\(newsize, sizeof\(tcb_t*\)\);) s
+377 482 M
+(    if \(!newdata\)) s
+377 474 M
+(        return -1;) s
+377 466 M
+(    ) s
+377 458 M
+(    int i;) s
+377 450 M
+(    for \(i = 0; i < array->cursize; i++\)) s
+377 442 M
+(        newdata[i] = array->data[i];) s
+377 426 M
+(    array->maxsize = newsize;) s
+377 418 M
+(    free\(array->data\);) s
+377 410 M
+(    array->data = newdata;) s
+377 394 M
+(    return 0;) s
+377 386 M
+(}) s
+377 370 M
+(/** @brief Insert a thread \(indicated by tid\) to arraytcb) s
+377 362 M
+( *  ) s
+377 354 M
+( *  It will instantiate a tcb structure for the new thread and try to insert it) s
+377 346 M
+( *  to arraytcb. Then the program will check if there is any existing stack ) s
+377 338 M
+( *  'slot' that is available by looking at array->avail_list, if not it will ) s
+377 330 M
+( *  allocate a new stack 'slot' for the thread. double_array\(\) will be invoked ) s
+377 322 M
+( *  if there is no more space in arraytcb for new thread. ) s
+377 314 M
+( *) s
+377 306 M
+( *  Note that although arraytcb will be locked when insert a new thread, only ) s
+377 298 M
+( *  the minimum amount of work is in critical section. Some expensive ) s
+377 290 M
+( *  operations such as malloc\(\) and free\(\) are not in critical section.) s
+377 282 M
+( *  ) s
+377 274 M
+( *  @param tid The tid of the new thread that need to be inserted) s
+377 266 M
+( *  @param mutex_arraytcb The mutex to protect arraytcb data structure so that ) s
+377 258 M
+( *                        only one thread can access arraytcb at the same time.) s
+377 250 M
+( *) s
+377 242 M
+( *  @return On success return a non-negative number which is the index of the ) s
+377 234 M
+( *          stack 'slot' that is used for the new thread. On error -1 is ) s
+377 226 M
+( *          returned.) s
+377 218 M
+( *          ) s
+377 210 M
+( */) s
+377 202 M
+(int arraytcb_insert_thread\(int tid, mutex_t *mutex_arraytcb\) {) s
+377 194 M
+(    // instantiate a tcb structure for the new thread) s
+377 186 M
+(    tcb_t* new_thread = malloc\(sizeof\(tcb_t\)\);) s
+377 178 M
+(    if \(!new_thread\)) s
+377 170 M
+(        return -1;) s
+377 162 M
+(    new_thread->tid = tid;) s
+377 154 M
+(    new_thread->state = RUNNING;) s
+377 146 M
+(    cond_init\(&new_thread->cond_var\);) s
+377 130 M
+(    mutex_lock\(mutex_arraytcb\);) s
+377 114 M
+(    // check if there is any existing stack 'slot' that is available) s
+377 106 M
+(    if \(array->avail_list->next\) {) s
+377 98 M
+(        // using an existing available stack 'slot' from array->avail_list) s
+377 90 M
+(        availnode_t *tmp = array->avail_list->next;) s
+377 82 M
+(        array->avail_list->next = array->avail_list->next->next;) s
+377 74 M
+(        int index = tmp->index;) s
+377 66 M
+(        array->data[index] = new_thread;) s
+377 58 M
+(        ) s
+377 50 M
+(        mutex_unlock\(mutex_arraytcb\);) s
+377 34 M
+(        free\(tmp\);) s
+377 26 M
+(        return index;) s
+377 18 M
+(    } else {) s
+377 10 M
+(        // no available exisiting stack 'slot', allocate a new stack 'slot') s
+377 2 M
+(        if \(array->cursize == array->maxsize\){) s
+_R
+S
+%%Page: (2) 4
+%%BeginPageSetup
+_S
+90 rotate
+24 -574 translate
+/pagenum 2 def
+/fname (./user/libthread/arraytcb.c) def
+/fdir (./user/libthread) def
+/ftail (arraytcb.c) def
+% User defined strings:
+/pagenumstr (2) def
+/moddatestr (02/19/16) def
+/modtimestr (20:42:57) def
+/user_header_p false def
+/user_footer_p false def
+%%EndPageSetup
+column_lines
+do_header
+5 490 M
+(            if \(double_array\(array\) < 0\) {) s
+5 482 M
+(                free\(new_thread\);) s
+5 474 M
+(                return -1;) s
+5 466 M
+(            }) s
+5 458 M
+(        }) s
+5 442 M
+(        int index = array->cursize++;) s
+5 434 M
+(        array->data[index] = new_thread;) s
+5 426 M
+(        ) s
+5 418 M
+(        mutex_unlock\(mutex_arraytcb\);) s
+5 402 M
+(        return index;) s
+5 394 M
+(    }) s
+5 386 M
+(}) s
+5 370 M
+(/** @brief Delete a thread from arraytcb) s
+5 362 M
+( *  ) s
+5 354 M
+( *  After deletion, the stack 'slot' that belonged to the deleted thread becomes ) s
+5 346 M
+( *  available for other threads to use. The program will insert the index of ) s
+5 338 M
+( *  the stack to array->avail_list so that the next time ) s
+5 330 M
+( *  arraytcb_insert_thread\(\) can find this available stack is O\(1\) time.) s
+5 322 M
+( *) s
+5 314 M
+( *  This function should be invoked\(\) when arraytcb is locked.) s
+5 306 M
+( *  ) s
+5 298 M
+( *  @param index The stack index for the thread that need to be deleted) s
+5 290 M
+( *) s
+5 282 M
+( *  @return On success return 0, on error return -1) s
+5 274 M
+( *) s
+5 266 M
+( */) s
+5 258 M
+(int arraytcb_delete_thread\(int index\) {) s
+5 250 M
+(    if \(array->data[index]\){) s
+5 242 M
+(        tcb_t *thr = array->data[index];) s
+5 234 M
+(        array->data[index] = NULL;) s
+5 218 M
+(        cond_destroy\(&thr->cond_var\);) s
+5 210 M
+(        free\(thr\);) s
+5 194 M
+(        availnode_t *tmp = malloc\(sizeof\(availnode_t\)\);) s
+5 186 M
+(        while \(!tmp\) {) s
+5 178 M
+(            lprintf\("malloc failed, will try again..."\);) s
+5 170 M
+(            printf\("malloc failed, will try again...\\n"\);) s
+5 162 M
+(            yield\(-1\);) s
+5 154 M
+(            tmp = malloc\(sizeof\(availnode_t\)\);) s
+5 146 M
+(        }) s
+5 138 M
+(        tmp->index = index;) s
+5 122 M
+(        tmp->next = array->avail_list->next;) s
+5 114 M
+(        array->avail_list->next = tmp;) s
+5 98 M
+(        return 0;) s
+5 90 M
+(    } else{) s
+5 82 M
+(        return -1;) s
+5 74 M
+(    }) s
+5 66 M
+(}) s
+5 50 M
+(/** @brief Get the tcb structure given an array index) s
+5 42 M
+( *) s
+5 34 M
+( *  arraytcb is unnecessary locked when this function is invoked.) s
+5 26 M
+( *  ) s
+5 18 M
+( *  @param index Index of array to get tcb structure) s
+5 10 M
+( *) s
+5 2 M
+( *  @return Pointer points to the tcb structure with index) s
+377 490 M
+( *) s
+377 482 M
+( */) s
+377 474 M
+(tcb_t* arraytcb_get_thread\(int index\) {) s
+377 466 M
+(    if \(index < 0 || index >= array->cursize\)) s
+377 458 M
+(        return NULL;) s
+377 450 M
+(    else) s
+377 442 M
+(        return array->data[index];) s
+377 434 M
+(}) s
+377 418 M
+(/** @brief Find the tcb structure of a given thraed) s
+377 410 M
+( *) s
+377 402 M
+( *  This function should be invoked\(\) when arraytcb is locked.) s
+377 394 M
+( *  ) s
+377 386 M
+( *  @param tid The tid of the thread that need to find its index) s
+377 378 M
+( *) s
+377 370 M
+( *  @return On success return the pointer points to the tcb structure of the ) s
+377 362 M
+( *          thread, on error return NULL \(can not find the thread in arraytcb\)) s
+377 354 M
+( *) s
+377 346 M
+( */) s
+377 338 M
+(tcb_t* arraytcb_find_thread\(int tid\) {) s
+377 330 M
+(    int i;) s
+377 322 M
+(    for \(i = 0; i < array->cursize; i++\)) s
+377 314 M
+(       if \(array->data[i] && array->data[i]->tid == tid\)) s
+377 306 M
+(            return array->data[i];) s
+377 298 M
+(    return NULL; ) s
+377 290 M
+(}) s
+377 274 M
+(/** @brief Set ktid to the tcb structure specified by index) s
+377 266 M
+( *) s
+377 258 M
+( *  arraytcb is unnecessary locked when this function is invoked.) s
+377 250 M
+( *  ) s
+377 242 M
+( *  @param index Specify which tcb structure will set ktid) s
+377 234 M
+( *  @param ktid The value of ktid \(kernel tid\) to set to tcb strcuture ) s
+377 226 M
+( *) s
+377 218 M
+( *  @return On success return zero, on error return -1 \(can not find the tcb) s
+377 210 M
+( *          structure specified by index\)) s
+377 202 M
+( *) s
+377 194 M
+( */) s
+377 186 M
+(int arraytcb_set_ktid\(int index, int ktid\) {) s
+377 178 M
+(    if \(index >= array->cursize || !array->data[index]\)) s
+377 170 M
+(        return -1;) s
+377 154 M
+(    array->data[index]->ktid = ktid;) s
+377 146 M
+(    return 0;) s
+377 138 M
+(}) s
+377 122 M
+(/** @brief Free arraytcb data structure, release resource) s
+377 114 M
+( *  ) s
+377 106 M
+( *  Probably this function should never be called...) s
+377 98 M
+( *) s
+377 90 M
+( */) s
+377 82 M
+(void arraytcb_free\(\) {) s
+377 74 M
+(     int i;) s
+377 66 M
+(    for \(i = 0; i < array->cursize; i++\)) s
+377 58 M
+(        if \(array->data[i]\) {) s
+377 50 M
+(            cond_destroy\(&array->data[i]->cond_var\);) s
+377 42 M
+(            free\(array->data[i]\);) s
+377 34 M
+(        }) s
+377 26 M
+(    free\(array->data\);) s
+377 18 M
+(    free\(array\);) s
+377 10 M
+(}) s
+_R
+S
+%%Page: (3) 5
+%%BeginPageSetup
+_S
+90 rotate
+24 -574 translate
+/pagenum 3 def
+/fname (./user/libthread/arraytcb.c) def
+/fdir (./user/libthread) def
+/ftail (arraytcb.c) def
+% User defined strings:
+/pagenumstr (3) def
+/moddatestr (02/19/16) def
+/modtimestr (20:42:57) def
+/user_header_p false def
+/user_footer_p false def
+%%EndPageSetup
+column_lines
+do_header
+5 490 M
+(/** @brief Check if index is within the boundry of the arraytcb) s
+5 482 M
+( *  ) s
+5 474 M
+( *  @param index The index to check) s
+5 466 M
+( *) s
+5 458 M
+( *  @return Return 0 if index is not within the boundray; return 1 if it is in) s
+5 450 M
+( */) s
+5 442 M
+(int arraytcb_is_valid\(int index\) {) s
+5 434 M
+(    if\(index < 0 || index >= array->cursize\) {) s
+5 426 M
+(        return 0;) s
+5 418 M
+(    } else {) s
+5 410 M
+(        return 1;) s
+5 402 M
+(    }) s
+5 394 M
+(}) s
+_R
+S
+%%Page: (1) 6
+%%BeginPageSetup
+_S
+90 rotate
+24 -574 translate
+/pagenum 1 def
+/fname (./user/libthread/arraytcb.h) def
+/fdir (./user/libthread) def
+/ftail (arraytcb.h) def
+% User defined strings:
+/pagenumstr (1) def
+/moddatestr (02/19/16) def
+/modtimestr (20:50:17) def
+/user_header_p false def
+/user_footer_p false def
+%%EndPageSetup
+column_lines
+do_header
+5 490 M
+(/** @file arraytcb.h) s
+5 482 M
+( *  @brief Interfaces for the expandable tcb management array.) s
+5 474 M
+( *) s
+5 466 M
+( *  @author Ke Wu \(kewu\)) s
+5 458 M
+( *) s
+5 450 M
+( *  @bug No known bugs.) s
+5 442 M
+( */) s
+5 426 M
+(#ifndef _ARRAYTCB_H_) s
+5 418 M
+(#define _ARRAYTCB_H_) s
+5 402 M
+(#include <cond_type.h>) s
+5 386 M
+(/** @brief Thread state */) s
+5 378 M
+(typedef enum {) s
+5 370 M
+(    RUNNING,) s
+5 362 M
+(    JOINED) s
+5 354 M
+(} thr_state_t;) s
+5 338 M
+(/** @brief Thread control block struct */) s
+5 330 M
+(typedef struct {) s
+5 322 M
+(    /** @brief Kernel assigned thread id */) s
+5 314 M
+(    int ktid;) s
+5 306 M
+(    /** @brief Thread lib assigned thread id */) s
+5 298 M
+(    int tid;) s
+5 290 M
+(    /** @brief Thread state */) s
+5 282 M
+(    thr_state_t state;) s
+5 274 M
+(    /** @brief Condition variable that belongs to the thread */) s
+5 266 M
+(    cond_t cond_var;) s
+5 258 M
+(} tcb_t;) s
+5 242 M
+(/** @brief The node type of array->avail_list */) s
+5 234 M
+(typedef struct availnode_s {) s
+5 226 M
+(    /** @brief Pointer to next node */) s
+5 218 M
+(    struct availnode_s *next;) s
+5 210 M
+(    /** @brief Which stack 'slot' is available \(not used by any thread\) */) s
+5 202 M
+(    int index;) s
+5 194 M
+(} availnode_t;) s
+5 178 M
+(/** @brief The data structure of arraytcb */) s
+5 170 M
+(struct arraytcb_s {) s
+5 162 M
+(    /** @brief The maximum capacity of arraytcb */) s
+5 154 M
+(    int maxsize;) s
+5 146 M
+(    /** @brief Current capacity of arraytcb ) s
+5 138 M
+(     *  When maxsize == cursize, it means there is no room for new thread,) s
+5 130 M
+(     *  arraytcb should be doubled.) s
+5 122 M
+(     */) s
+5 114 M
+(    int cursize;) s
+5 106 M
+(    /** @brief Where the actual tcb data is stored */) s
+5 98 M
+(    tcb_t** data;) s
+5 90 M
+(    /** @brief A linked list that stores all available \(not used by any) s
+5 82 M
+(     * thread\) stack 'slot') s
+5 74 M
+(     */) s
+5 66 M
+(    availnode_t *avail_list;) s
+5 58 M
+(};) s
+5 42 M
+(int arraytcb_init\(int size\);) s
+5 26 M
+(int arraytcb_insert_thread\(int tid, mutex_t *mutex_arraytcb\);) s
+5 10 M
+(int arraytcb_delete_thread\(int index\);) s
+377 490 M
+(tcb_t* arraytcb_get_thread\(int index\);) s
+377 474 M
+(tcb_t* arraytcb_find_thread\(int tid\);) s
+377 458 M
+(int arraytcb_set_ktid\(int index, int ktid\);) s
+377 442 M
+(void arraytcb_free\(\);) s
+377 426 M
+(int arraytcb_is_valid\(int index\);) s
+377 410 M
+(#endif) s
+_R
+S
+%%Page: (1) 7
+%%BeginPageSetup
+_S
+90 rotate
+24 -574 translate
+/pagenum 1 def
+/fname (./user/libthread/asm_get_ebp.S) def
+/fdir (./user/libthread) def
+/ftail (asm_get_ebp.S) def
+% User defined strings:
+/pagenumstr (1) def
+/moddatestr (02/19/16) def
+/modtimestr (16:45:07) def
+/user_header_p false def
+/user_footer_p false def
+%%EndPageSetup
+column_lines
+do_header
+5 490 M
+(/** @file asm_get_ebp.S) s
+5 482 M
+( *  @brief Get current %ebp value) s
+5 474 M
+( *) s
+5 466 M
+( *  @author Ke Wu \(kewu\)) s
+5 458 M
+( *  @author Jian Wang \(jianwan3\)) s
+5 450 M
+( *) s
+5 442 M
+( *  @bug No known bugs.) s
+5 434 M
+( */) s
+5 418 M
+(/* define asm_get_ebp label */) s
+5 410 M
+(.global asm_get_ebp) s
+5 394 M
+(asm_get_ebp:) s
+5 386 M
+(movl    %ebp,%eax # Get current %ebp as return value) s
+5 378 M
+(ret) s
+_R
+S
+%%Page: (1) 8
+%%BeginPageSetup
+_S
+90 rotate
+24 -574 translate
+/pagenum 1 def
+/fname (./user/libthread/asm_get_esp.S) def
+/fdir (./user/libthread) def
+/ftail (asm_get_esp.S) def
+% User defined strings:
+/pagenumstr (1) def
+/moddatestr (02/19/16) def
+/modtimestr (08:59:44) def
+/user_header_p false def
+/user_footer_p false def
+%%EndPageSetup
+column_lines
+do_header
+5 490 M
+(/** @file asm_get_esp.S) s
+5 482 M
+( *) s
+5 474 M
+( *  @brief Get current %esp value) s
+5 466 M
+( *  ) s
+5 458 M
+( *  @author Jian Wang \(jianwan3\)) s
+5 450 M
+( *  @author Ke Wu \(kewu\)) s
+5 442 M
+( *  @bug No known bugs) s
+5 434 M
+( */) s
+5 426 M
+(# uint32_t asm_get_esp\(\);) s
+5 410 M
+(.globl asm_get_esp) s
+5 394 M
+(asm_get_esp:) s
+5 386 M
+(movl    %esp, %eax      # Get current %esp value) s
+5 378 M
+(ret                     # Return current %esp value) s
+_R
+S
+%%Page: (1) 9
+%%BeginPageSetup
+_S
+90 rotate
+24 -574 translate
+/pagenum 1 def
+/fname (./user/libthread/asm_thr_exit.S) def
+/fdir (./user/libthread) def
+/ftail (asm_thr_exit.S) def
+% User defined strings:
+/pagenumstr (1) def
+/moddatestr (02/19/16) def
+/modtimestr (08:31:51) def
+/user_header_p false def
+/user_footer_p false def
+%%EndPageSetup
+column_lines
+do_header
+5 490 M
+(#include <syscall_int.h>) s
+5 474 M
+(.global asm_thr_exit) s
+5 458 M
+(asm_thr_exit:) s
+5 450 M
+(    movl    4\(%esp\), %ebx       # %ebx = &mutex_arraytcb->inner_lock) s
+5 442 M
+(    movl    8\(%esp\), %edi       # %edi = page_remove_info) s
+5 426 M
+(    # start removing page, should not use stack anymore) s
+5 410 M
+(    movl    4\(%edi\), %eax       # %eax = page_remove_info[1] \(is_remove of base1 page\)) s
+5 402 M
+(    testl   %eax, %eax          # check if base1 page need to remove) s
+5 394 M
+(    je      .L1                 # is_remove == 0, don't need to remove) s
+5 386 M
+(    movl    0\(%edi\), %esi       # is_remove != 0, remove base1 page) s
+5 378 M
+(    int     $REMOVE_PAGES_INT   # call remove_page\(\)) s
+5 370 M
+(  .L1:) s
+5 362 M
+(    movl    12\(%edi\), %eax      # %eax = page_remove_info[3] \(is_remove of base2 page\)) s
+5 354 M
+(    testl   %eax, %eax          # check if base2 page need to remove) s
+5 346 M
+(    je      .L2                 # is_remove == 0, don't need to remove) s
+5 338 M
+(    movl    8\(%edi\), %esi       # is_remove != 0, remove base2 page) s
+5 330 M
+(    int     $REMOVE_PAGES_INT   # call remove_page\(\)) s
+5 322 M
+(  .L2:) s
+5 314 M
+(    movl    20\(%edi\), %eax      # %eax = page_remove_info[5] \(is_remove of base3 page\)) s
+5 306 M
+(    testl   %eax, %eax          # check if base3 page need to remove) s
+5 298 M
+(    je      .L3                 # is_remove == 0, don't need to remove) s
+5 290 M
+(    movl    16\(%edi\), %esi      # is_remove != 0, remove base3 page) s
+5 282 M
+(    int     $REMOVE_PAGES_INT   # call remove_page\(\)) s
+5 274 M
+(  .L3:) s
+5 266 M
+(    movl    $1, %eax            # %eax = 1) s
+5 258 M
+(    xchg    \(%ebx\), %eax        # atomically do mutex_arraytcb->inner_lock = 1) s
+5 250 M
+(    int     $VANISH_INT         # Syscall of vanish) s
+5 242 M
+(    ret                         # should never reach here though) s
+_R
+S
+%%Page: (1) 10
+%%BeginPageSetup
+_S
+90 rotate
+24 -574 translate
+/pagenum 1 def
+/fname (./user/libthread/asm_xchg.S) def
+/fdir (./user/libthread) def
+/ftail (asm_xchg.S) def
+% User defined strings:
+/pagenumstr (1) def
+/moddatestr (02/19/16) def
+/modtimestr (08:58:57) def
+/user_header_p false def
+/user_footer_p false def
+%%EndPageSetup
+column_lines
+do_header
+5 490 M
+(/** @file asm_xchg.S) s
+5 482 M
+( *) s
+5 474 M
+( *  @brief Atomically exchange two values.) s
+5 466 M
+( *  ) s
+5 458 M
+( *  @author Jian Wang \(jianwan3\)) s
+5 450 M
+( *  @author Ke Wu \(kewu\)) s
+5 442 M
+( *) s
+5 434 M
+( *  @bug No known bugs) s
+5 426 M
+( */) s
+5 418 M
+(# int asm_xchg\(int *lock_available, int val\);) s
+5 402 M
+(.globl asm_xchg) s
+5 386 M
+(asm_xchg:) s
+5 378 M
+(movl    4\(%esp\), %ecx   # Get lock_available) s
+5 370 M
+(movl    8\(%esp\), %eax   # Get val) s
+5 362 M
+(xchg    \(%ecx\), %eax    # atomically exchange *lock_available with val) s
+5 354 M
+(ret                     # Return old \(*lock_availble\)) s
+_R
+S
+%%Page: (1) 11
+%%BeginPageSetup
+_S
+90 rotate
+24 -574 translate
+/pagenum 1 def
+/fname (./user/libthread/cond_var.c) def
+/fdir (./user/libthread) def
+/ftail (cond_var.c) def
+% User defined strings:
+/pagenumstr (1) def
+/moddatestr (02/19/16) def
+/modtimestr (19:57:41) def
+/user_header_p false def
+/user_footer_p false def
+%%EndPageSetup
+column_lines
+do_header
+5 490 M
+(/** @file cond_var.c) s
+5 482 M
+( *  @brief This file contains the implementation of condition varaible) s
+5 474 M
+( *) s
+5 466 M
+( *  cond_t contains the following fields) s
+5 458 M
+( *     1. mutex: a mutex to protect critical section of condition varaible code.) s
+5 450 M
+( *     2. deque: a double-ended queue to store the threads that are blocking on) s
+5 442 M
+( *        the condition varaible. The queue is FIFO so first blocked thread will) s
+5 434 M
+( *        get be signaled first.) s
+5 426 M
+( *) s
+5 418 M
+( *  @author Ke Wu \(kewu\)) s
+5 410 M
+( *) s
+5 402 M
+( *  @bug No known bugs.) s
+5 394 M
+( */) s
+5 386 M
+(#include <mutex.h>) s
+5 378 M
+(#include <thread.h>) s
+5 370 M
+(#include <syscall.h>) s
+5 362 M
+(#include <cond_type.h>) s
+5 354 M
+(#include <stdlib.h>) s
+5 346 M
+(#include <queue.h>) s
+5 338 M
+(#include <stdio.h>) s
+5 330 M
+(#include <thr_internals.h>) s
+5 322 M
+(#include <simics.h>) s
+5 306 M
+(/** @brief Initialize condition variable) s
+5 298 M
+( *  ) s
+5 290 M
+( *  @param cv Condition variable to initialize) s
+5 282 M
+( *) s
+5 274 M
+( *  @return 0 on success; -1 on error) s
+5 266 M
+( */) s
+5 258 M
+(int cond_init\(cond_t *cv\) {) s
+5 250 M
+(    int is_error = 0;) s
+5 242 M
+(    is_error |= mutex_init\(&cv->mutex\);) s
+5 234 M
+(    is_error |= queue_init\(&cv->deque\);) s
+5 218 M
+(    return is_error ? -1 : 0;) s
+5 210 M
+(}) s
+5 194 M
+(/** @brief Destory condition variable) s
+5 186 M
+( *  ) s
+5 178 M
+( *  @param cv Condition variable to destroy) s
+5 170 M
+( *) s
+5 162 M
+( *  @return void) s
+5 154 M
+( */) s
+5 146 M
+(void cond_destroy\(cond_t *cv\) {) s
+5 138 M
+(    mutex_lock\(&cv->mutex\);) s
+5 122 M
+(    if \(!queue_is_active\(&cv->deque\)\) {) s
+5 114 M
+(        // try to destory a destroied cond_var) s
+5 106 M
+(        panic\("condition variable %p has already been destroied!", cv\);) s
+5 98 M
+(    }) s
+5 82 M
+(    while \(queue_destroy\(&cv->deque\) < 0\) {) s
+5 74 M
+(        // illegal, some threads are blocked waiting on it) s
+5 66 M
+(        lprintf\("Destroy condition variable %p failed, ") s
+5 58 M
+(                "some threads are blocking on it, will try again...", cv\);) s
+5 50 M
+(        printf\("Destroy condition variable %p failed, ") s
+5 42 M
+(                "some threads are blocking on it, will try again...\\n", cv\);) s
+5 34 M
+(        mutex_unlock\(&cv->mutex\);) s
+5 26 M
+(        yield\(-1\);) s
+5 18 M
+(        mutex_lock\(&cv->mutex\);) s
+5 10 M
+(    }) s
+377 490 M
+(    mutex_unlock\(&cv->mutex\);) s
+377 474 M
+(    mutex_destroy\(&cv->mutex\);) s
+377 458 M
+(}) s
+377 442 M
+(/** @brief Allows a thread to wait for a condition) s
+377 434 M
+( *  ) s
+377 426 M
+( *  @param cv Condition variable to wait on) s
+377 418 M
+( *  @param mp The mutex needed to check condition) s
+377 410 M
+( *  ) s
+377 402 M
+( *  @return void) s
+377 394 M
+( */) s
+377 386 M
+(void cond_wait\(cond_t *cv, mutex_t *mp\) {) s
+377 378 M
+(    // first allocate node for queue) s
+377 370 M
+(    node_t *tmp = malloc\(sizeof\(node_t\)\);) s
+377 362 M
+(    while \(!tmp\) {) s
+377 354 M
+(        lprintf\("malloc failed, will try again..."\);) s
+377 346 M
+(        printf\("malloc failed, will try again...\\n"\);) s
+377 338 M
+(        yield\(-1\);) s
+377 330 M
+(        tmp = malloc\(sizeof\(node_t\)\);) s
+377 322 M
+(    }) s
+377 314 M
+(    tmp->ktid = thr_getktid\(\);) s
+377 306 M
+(    tmp->reject = 0;) s
+377 290 M
+(    mutex_lock\(&cv->mutex\);) s
+377 274 M
+(    if \(!queue_is_active\(&cv->deque\)\) {) s
+377 266 M
+(        // try to wait on a destroied cond_var) s
+377 258 M
+(        panic\("condition variable %p has already been destroied!", cv\);) s
+377 250 M
+(    }) s
+377 234 M
+(    enqueue\(&cv->deque, tmp\);) s
+377 218 M
+(    mutex_unlock\(mp\);) s
+377 202 M
+(    mutex_unlock\(&cv->mutex\);) s
+377 194 M
+(    // The while loop is used to guard against inproper "wake ups", reject is ) s
+377 186 M
+(    // used to indicate if the thread has been dequeued by others) s
+377 178 M
+(    while\(!tmp->reject\) {) s
+377 170 M
+(        if \(deschedule\(&tmp->reject\) < 0\) {) s
+377 162 M
+(            panic\("deschedule error of condition variable %p", cv\);) s
+377 154 M
+(        }) s
+377 146 M
+(    }) s
+377 130 M
+(    free\(tmp\);) s
+377 114 M
+(    mutex_lock\(mp\);) s
+377 106 M
+(}) s
+377 90 M
+(/** @brief Wake up a thread waiting on the condition variable, if one exists) s
+377 82 M
+( *  ) s
+377 74 M
+( *  @param cv Condition variable that a thread may wait on) s
+377 66 M
+( *  ) s
+377 58 M
+( *  @return void) s
+377 50 M
+( */) s
+377 42 M
+(void cond_signal\(cond_t *cv\) {) s
+377 34 M
+(    mutex_lock\(&cv->mutex\);) s
+377 18 M
+(    if \(!queue_is_active\(&cv->deque\)\) {) s
+377 10 M
+(        // try to singal a destroied cond_var) s
+377 2 M
+(        panic\("condition variable %p has already been destroied!", cv\);) s
+_R
+S
+%%Page: (2) 12
+%%BeginPageSetup
+_S
+90 rotate
+24 -574 translate
+/pagenum 2 def
+/fname (./user/libthread/cond_var.c) def
+/fdir (./user/libthread) def
+/ftail (cond_var.c) def
+% User defined strings:
+/pagenumstr (2) def
+/moddatestr (02/19/16) def
+/modtimestr (19:57:41) def
+/user_header_p false def
+/user_footer_p false def
+%%EndPageSetup
+column_lines
+do_header
+5 490 M
+(    }) s
+5 474 M
+(    node_t *tmp = dequeue\(&cv->deque\);) s
+5 466 M
+(    if \(tmp\) {) s
+5 458 M
+(        // if some threads are waiting on the condition varaible, awaken the ) s
+5 450 M
+(        // thread in the head of the queue) s
+5 442 M
+(        int tmp_ktid = tmp->ktid;) s
+5 434 M
+(        tmp->reject = 1;) s
+5 426 M
+(        make_runnable\(tmp_ktid\);) s
+5 418 M
+(    }) s
+5 410 M
+(    mutex_unlock\(&cv->mutex\);) s
+5 402 M
+(}) s
+5 386 M
+(/** @brief Wake up all threads waiting on the condition variable) s
+5 378 M
+( *  ) s
+5 370 M
+( *  This function will not awaken threads that may invoke cond_wait\(cv\)) s
+5 362 M
+( *  after this call has begun execution, because cond_broadcast\(cv\) and) s
+5 354 M
+( *  cond_broadcast\(cv\) are guarded by the same mutex cv->mutex on entry.) s
+5 346 M
+( *) s
+5 338 M
+( *  @param cv Condition variable that threads may wait on) s
+5 330 M
+( *  ) s
+5 322 M
+( *  @return void) s
+5 314 M
+( */) s
+5 306 M
+(void cond_broadcast\(cond_t *cv\) {) s
+5 298 M
+(    mutex_lock\(&cv->mutex\);) s
+5 282 M
+(    if \(!queue_is_active\(&cv->deque\)\) {) s
+5 274 M
+(        // try to singal a destroied cond_var) s
+5 266 M
+(        panic\("condition variable %p has already been destroied!", cv\);) s
+5 258 M
+(    }) s
+5 242 M
+(    node_t *tmp = dequeue\(&cv->deque\);) s
+5 234 M
+(    while \(tmp\) {) s
+5 226 M
+(        int tmp_ktid = tmp->ktid;) s
+5 218 M
+(        tmp->reject = 1;) s
+5 210 M
+(        make_runnable\(tmp_ktid\);) s
+5 202 M
+(        tmp = dequeue\(&cv->deque\);) s
+5 194 M
+(    }) s
+5 186 M
+(    mutex_unlock\(&cv->mutex\);) s
+5 178 M
+(}) s
+_R
+S
+%%Page: (1) 13
+%%BeginPageSetup
+_S
+90 rotate
+24 -574 translate
+/pagenum 1 def
+/fname (./user/libthread/hashtable.c) def
+/fdir (./user/libthread) def
+/ftail (hashtable.c) def
+% User defined strings:
+/pagenumstr (1) def
+/moddatestr (02/19/16) def
+/modtimestr (19:57:41) def
+/user_header_p false def
+/user_footer_p false def
+%%EndPageSetup
+column_lines
+do_header
+5 490 M
+(/** @file hashtable.c) s
+5 482 M
+( *  @brief This file contains implementation of a generic hash table) s
+5 474 M
+( *) s
+5 466 M
+( *  It implements some common APIs of a hash table, including init\(\), ) s
+5 458 M
+( *  put\(\), get\(\), remove\(\) and destroy\(\). The size of hash table and) s
+5 450 M
+( *  hash function are contained in the hashtable_t data structure ) s
+5 442 M
+( *  which is self-defined by user and passed to this program. The ) s
+5 434 M
+( *  collision resolution for this implementation is separate chaining) s
+5 426 M
+( *  with linked lists. This hash table is thread-safe.) s
+5 418 M
+( *) s
+5 410 M
+( *  @author Ke Wu \(kewu\)) s
+5 402 M
+( *  @bug No known bug) s
+5 394 M
+( */) s
+5 378 M
+(#include <stdlib.h>) s
+5 370 M
+(#include <hashtable.h>) s
+5 362 M
+(#include <stdio.h>) s
+5 354 M
+(#include <simics.h>) s
+5 338 M
+(/** @brief Initialize a hashtable data structure) s
+5 330 M
+( *  ) s
+5 322 M
+( *  @param table The hash table that need to initialize) s
+5 314 M
+( *) s
+5 306 M
+( *  @return On success return 0, on error return a negative number      ) s
+5 298 M
+( */) s
+5 290 M
+(int hashtable_init\(hashtable_t *table\) {) s
+5 282 M
+(    table->array = malloc\(sizeof\(hashnode_t\) * table->size\);) s
+5 274 M
+(    if \(!table->array\)) s
+5 266 M
+(        return -1;) s
+5 258 M
+(    int i;) s
+5 250 M
+(    for \(i = 0; i < table->size; i++\)) s
+5 242 M
+(        table->array[i].next = NULL;) s
+5 226 M
+(    return mutex_init\(&table->lock\);) s
+5 218 M
+(}) s
+5 202 M
+(/** @brief Put a <key, value> pair to a hash table) s
+5 194 M
+( *) s
+5 186 M
+( *  @param table The hash table to put <key, value> pair) s
+5 178 M
+( *  @param key Key of <key, value> pair) s
+5 170 M
+( *  @param value Value of <key, value> pair) s
+5 162 M
+( *) s
+5 154 M
+( *  @return Void) s
+5 146 M
+( */) s
+5 138 M
+(void hashtable_put\(hashtable_t *table, void* key, void* value\) {) s
+5 130 M
+(    int index = table->func\(key\);) s
+5 114 M
+(    hashnode_t *hp = malloc\(sizeof\(hashnode_t\)\);) s
+5 106 M
+(    while \(!hp\) {) s
+5 98 M
+(        lprintf\("malloc failed, will try again..."\);) s
+5 90 M
+(        printf\("malloc failed, will try again...\\n"\);) s
+5 82 M
+(        yield\(-1\);) s
+5 74 M
+(        hp = malloc\(sizeof\(hashnode_t\)\);) s
+5 66 M
+(    }) s
+5 58 M
+(    hp->key = key;) s
+5 50 M
+(    hp->value = value;) s
+5 34 M
+(    mutex_lock\(&table->lock\);) s
+5 26 M
+(    hp->next = table->array[index].next;) s
+5 18 M
+(    table->array[index].next = hp;) s
+5 10 M
+(    mutex_unlock\(&table->lock\);) s
+5 2 M
+(}) s
+377 474 M
+(/** @brief Given a key, return the corresponding value in a hash table) s
+377 466 M
+( *  ) s
+377 458 M
+( *  This method only return the value without delete the <key, value> pair) s
+377 450 M
+( *  ) s
+377 442 M
+( *  @param table The hash table to look up value of <key, value> pair) s
+377 434 M
+( *  @param key The key to look up value of <key, value> pair) s
+377 426 M
+( *  @param is_find This is also a return value, it indicates if the key is ) s
+377 418 M
+( *                 found in the hash table) s
+377 410 M
+( *) s
+377 402 M
+( *  @return The value of the <key, value> pair, return NULL if can not find) s
+377 394 M
+( *          the key in the hash table) s
+377 386 M
+( */) s
+377 378 M
+(void* hashtable_get\(hashtable_t *table, void* key, int *is_find\) {) s
+377 370 M
+(    int index = table->func\(key\);) s
+377 354 M
+(    mutex_lock\(&table->lock\);) s
+377 346 M
+(    hashnode_t *hp = &\(table->array[index]\);) s
+377 338 M
+(    while \(hp->next\) {) s
+377 330 M
+(        if \(hp->next->key == key\) {) s
+377 322 M
+(            void* rv = hp->next->value;) s
+377 314 M
+(            mutex_unlock\(&table->lock\);) s
+377 306 M
+(            *is_find = 1;) s
+377 298 M
+(            return rv;) s
+377 290 M
+(        }) s
+377 282 M
+(        hp = hp->next;) s
+377 274 M
+(    }) s
+377 266 M
+(    mutex_unlock\(&table->lock\);) s
+377 250 M
+(    *is_find = 0;) s
+377 242 M
+(    return NULL;) s
+377 234 M
+(} ) s
+377 218 M
+(/** @brief Given a key, remove the corresponding <key, value> pair in a ) s
+377 210 M
+( *         hash table) s
+377 202 M
+( *  ) s
+377 194 M
+( *  This method will return the value and also delete the <key, value> pair) s
+377 186 M
+( *  ) s
+377 178 M
+( *  @param table The hash table to delete <key, value> pair) s
+377 170 M
+( *  @param key The key to delete <key, value> pair) s
+377 162 M
+( *  @param is_find This is also a return value, it indicates if the key is ) s
+377 154 M
+( *                 found in the hash table) s
+377 146 M
+( *) s
+377 138 M
+( *  @return The value of the <key, value> pair, return NULL if can not find) s
+377 130 M
+( *          the key in the hash table) s
+377 122 M
+( */) s
+377 114 M
+(void* hashtable_remove\(hashtable_t *table, void* key, int *is_find\) {) s
+377 106 M
+(    int index = table->func\(key\);) s
+377 90 M
+(    mutex_lock\(&table->lock\);) s
+377 82 M
+(    hashnode_t *hp = &\(table->array[index]\);) s
+377 74 M
+(    while \(hp->next\) {) s
+377 66 M
+(        if \(hp->next->key == key\) {) s
+377 58 M
+(            hashnode_t *tmp = hp->next;) s
+377 50 M
+(            hp->next = hp->next->next;) s
+377 42 M
+(            mutex_unlock\(&table->lock\);) s
+377 26 M
+(            void *rv = tmp->value;) s
+377 18 M
+(            free\(tmp\);) s
+377 10 M
+(            *is_find = 1;) s
+377 2 M
+(            return rv;) s
+_R
+S
+%%Page: (2) 14
+%%BeginPageSetup
+_S
+90 rotate
+24 -574 translate
+/pagenum 2 def
+/fname (./user/libthread/hashtable.c) def
+/fdir (./user/libthread) def
+/ftail (hashtable.c) def
+% User defined strings:
+/pagenumstr (2) def
+/moddatestr (02/19/16) def
+/modtimestr (19:57:41) def
+/user_header_p false def
+/user_footer_p false def
+%%EndPageSetup
+column_lines
+do_header
+5 490 M
+(        }) s
+5 482 M
+(        hp = hp->next;) s
+5 474 M
+(    }) s
+5 466 M
+(    mutex_unlock\(&table->lock\);) s
+5 458 M
+(    ) s
+5 450 M
+(    *is_find = 0;) s
+5 442 M
+(    return NULL;) s
+5 434 M
+(} ) s
+5 418 M
+(/** @brief Destroy a hashtable data structure) s
+5 410 M
+( *  ) s
+5 402 M
+( *  @param table The table to be destroied) s
+5 394 M
+( *) s
+5 386 M
+( *  @return Void    ) s
+5 378 M
+( */) s
+5 370 M
+(void hashtable_destroy\(hashtable_t *table\) {) s
+5 362 M
+(    hashnode_t *hp;) s
+5 354 M
+(    int i;) s
+5 346 M
+(    for \(i = 0; i < table->size; i++\){) s
+5 338 M
+(        hp = &\(table->array[i]\);) s
+5 330 M
+(        while \(hp->next\) {) s
+5 322 M
+(            hashnode_t *tmp = hp->next;) s
+5 314 M
+(            hp->next = hp->next->next;) s
+5 306 M
+(            free\(tmp\);) s
+5 298 M
+(        }) s
+5 290 M
+(    }) s
+5 282 M
+(    free\(table->array\);) s
+5 274 M
+(}) s
+_R
+S
+%%Page: (1) 15
+%%BeginPageSetup
+_S
+90 rotate
+24 -574 translate
+/pagenum 1 def
+/fname (./user/libthread/hashtable.h) def
+/fdir (./user/libthread) def
+/ftail (hashtable.h) def
+% User defined strings:
+/pagenumstr (1) def
+/moddatestr (02/19/16) def
+/modtimestr (20:34:29) def
+/user_header_p false def
+/user_footer_p false def
+%%EndPageSetup
+column_lines
+do_header
+5 490 M
+(/** @file hashtable.h) s
+5 482 M
+( *  @brief Function prototypes of a generic hash table and declaraion of ) s
+5 474 M
+( *         hash table node and hash table data structure. ) s
+5 466 M
+( *) s
+5 458 M
+( *  @author Ke Wu \(kewu\)) s
+5 450 M
+( *) s
+5 442 M
+( *  @bug No known bugs.) s
+5 434 M
+( */) s
+5 418 M
+(#ifndef _HASHTABLE_H_) s
+5 410 M
+(#define _HASHTABLE_H_) s
+5 394 M
+(#include <mutex.h>) s
+5 378 M
+(/** @brief The node strcuture of linked list of hash table) s
+5 370 M
+(  * Separate chaining is used to resolve collision. ) s
+5 362 M
+(  */) s
+5 354 M
+(typedef struct hashnode_s{) s
+5 346 M
+(    /** @brief Pointer to next node */) s
+5 338 M
+(    struct hashnode_s *next;) s
+5 330 M
+(    /** @brief Key */) s
+5 322 M
+(    void *key;) s
+5 314 M
+(    /** @brief Value */) s
+5 306 M
+(    void *value;) s
+5 298 M
+(} hashnode_t;) s
+5 282 M
+(/** @brief The hash table data structure */) s
+5 274 M
+(typedef struct {) s
+5 266 M
+(    /** @brief Acutal data of the hashtable */) s
+5 258 M
+(    hashnode_t *array;) s
+5 250 M
+(    /** @brief Size of the hashtable */) s
+5 242 M
+(    int size;) s
+5 234 M
+(    /** @brief The hash function used by this hashtable */) s
+5 226 M
+(    int \(*func\)\(void *\);) s
+5 218 M
+(    /** A mutex to ensure thread-safety of this hashtable */) s
+5 210 M
+(    mutex_t lock;) s
+5 202 M
+(} hashtable_t;) s
+5 186 M
+(int hashtable_init\(hashtable_t *table\);) s
+5 170 M
+(void hashtable_put\(hashtable_t *table, void* key, void* vaule\);) s
+5 154 M
+(void* hashtable_get\(hashtable_t *table, void* key, int *is_find\);) s
+5 138 M
+(void* hashtable_remove\(hashtable_t *table, void* key, int *is_find\);) s
+5 122 M
+(void hashtable_destroy\(hashtable_t *table\);) s
+5 106 M
+(#endif) s
+_R
+S
+%%Page: (1) 16
+%%BeginPageSetup
+_S
+90 rotate
+24 -574 translate
+/pagenum 1 def
+/fname (./user/libthread/malloc.c) def
+/fdir (./user/libthread) def
+/ftail (malloc.c) def
+% User defined strings:
+/pagenumstr (1) def
+/moddatestr (02/19/16) def
+/modtimestr (16:42:32) def
+/user_header_p false def
+/user_footer_p false def
+%%EndPageSetup
+column_lines
+do_header
+5 490 M
+(/** @file malloc.c) s
+5 482 M
+( *  @brief Wrapper for malloc lib) s
+5 474 M
+( *) s
+5 466 M
+( *  @author Ke Wu \(kewu\)) s
+5 458 M
+( *  @author Jian Wang \(jianwan3\)) s
+5 450 M
+( *) s
+5 442 M
+( *  @bug No known bugs.) s
+5 434 M
+( */) s
+5 418 M
+(#include <stdlib.h>) s
+5 410 M
+(#include <types.h>) s
+5 402 M
+(#include <stddef.h>) s
+5 386 M
+(#include <spinlock.h>) s
+5 370 M
+(/** @brief Mutex to guard malloc library */) s
+5 362 M
+(spinlock_t mutex_malloc;) s
+5 346 M
+(/** @brief Initialize malloc lib) s
+5 338 M
+( *  ) s
+5 330 M
+( *  @return 0 on success) s
+5 322 M
+( */) s
+5 314 M
+(int malloc_init\(\) {) s
+5 306 M
+(    SPINLOCK_INIT\(&mutex_malloc\);) s
+5 298 M
+(    return 0;) s
+5 290 M
+(}) s
+5 274 M
+(/** @brief Wrapper for malloc syscall) s
+5 266 M
+( *  ) s
+5 258 M
+( *  @param __size Parameter 1 of malloc syscall) s
+5 250 M
+( *) s
+5 242 M
+( *  @return Return value of malloc syscall) s
+5 234 M
+( */) s
+5 226 M
+(void *malloc\(size_t __size\)) s
+5 218 M
+({) s
+5 210 M
+(    SPINLOCK_LOCK\(&mutex_malloc\);) s
+5 202 M
+(    void *ret = _malloc\(__size\);) s
+5 194 M
+(    SPINLOCK_UNLOCK\(&mutex_malloc\);) s
+5 178 M
+(    return ret;) s
+5 170 M
+(}) s
+5 154 M
+(/** @brief Wrapper for calloc syscall) s
+5 146 M
+( *  ) s
+5 138 M
+( *  @param __nelt Parameter 1 of calloc syscall) s
+5 130 M
+( *  @param __eltsize Parameter 2 of calloc syscall) s
+5 122 M
+( *) s
+5 114 M
+( *  @return Return value of calloc syscall) s
+5 106 M
+( */) s
+5 98 M
+(void *calloc\(size_t __nelt, size_t __eltsize\)) s
+5 90 M
+({) s
+5 82 M
+(    SPINLOCK_LOCK\(&mutex_malloc\);) s
+5 74 M
+(    void *ret = _calloc\(__nelt, __eltsize\);) s
+5 66 M
+(    SPINLOCK_UNLOCK\(&mutex_malloc\);) s
+5 50 M
+(    return ret;) s
+5 42 M
+(}) s
+5 26 M
+(/** @brief Wrapper for realloc syscall) s
+5 18 M
+( *  ) s
+5 10 M
+( *  @param __buf Parameter 1 of realloc syscall) s
+5 2 M
+( *  @param __new_size Parameter 2 of realloc syscall) s
+377 490 M
+( *) s
+377 482 M
+( *  @return Return value of realloc syscall) s
+377 474 M
+( */) s
+377 466 M
+(void *realloc\(void *__buf, size_t __new_size\)) s
+377 458 M
+({) s
+377 450 M
+(    SPINLOCK_LOCK\(&mutex_malloc\);) s
+377 442 M
+(    void *ret = _realloc\(__buf, __new_size\);) s
+377 434 M
+(    SPINLOCK_UNLOCK\(&mutex_malloc\);) s
+377 418 M
+(    return ret;) s
+377 410 M
+(}) s
+377 394 M
+(/** @brief Wrapper for free syscall) s
+377 386 M
+( *  ) s
+377 378 M
+( *  @param __buf Parameter 1 of free syscall) s
+377 370 M
+( *) s
+377 362 M
+( *  @return void) s
+377 354 M
+( */) s
+377 346 M
+(void free\(void *__buf\)) s
+377 338 M
+({) s
+377 330 M
+(    SPINLOCK_LOCK\(&mutex_malloc\);) s
+377 322 M
+(    _free\(__buf\);) s
+377 314 M
+(    SPINLOCK_UNLOCK\(&mutex_malloc\);) s
+377 306 M
+(}) s
+_R
+S
+%%Page: (1) 17
+%%BeginPageSetup
+_S
+90 rotate
+24 -574 translate
+/pagenum 1 def
+/fname (./user/libthread/mutex.c) def
+/fdir (./user/libthread) def
+/ftail (mutex.c) def
+% User defined strings:
+/pagenumstr (1) def
+/moddatestr (02/19/16) def
+/modtimestr (19:57:41) def
+/user_header_p false def
+/user_footer_p false def
+%%EndPageSetup
+column_lines
+do_header
+5 490 M
+(/** @file mutex.c) s
+5 482 M
+( *  @brief Implementation of mutex) s
+5 474 M
+( *) s
+5 466 M
+( *  mutex_t contains the following fields) s
+5 458 M
+( *     1. lock_available: it is an integer to indicate if the mutex lock is) s
+5 450 M
+( *        available. lock_available == 1 means available \(unlocked\), ) s
+5 442 M
+( *        lock_available == 0 means unavailable \(locked\).) s
+5 434 M
+( *        lock_available == -1 means the mutex is destroied) s
+5 426 M
+( *     2. inner_lock: a spinlock to protect critical section of mutex code.) s
+5 418 M
+( *     3. deque: a double-ended queue to store the threads that are blocking on) s
+5 410 M
+( *        the mutex. The queue is FIFO so first blocked thread will get the ) s
+5 402 M
+( *        mutex first.) s
+5 394 M
+( *) s
+5 386 M
+( *  To achieve bounded waiting, a spinlock and a queue are used. Although ) s
+5 378 M
+( *  spinlock itself doesn't satisfy bounded waitting, the critical section ) s
+5 370 M
+( *  \(which is the code of mutex\) that protected by spinlock are guaranteed to ) s
+5 362 M
+( *  be short. Becuase only when one thread is in the mutex code need to obtain) s
+5 354 M
+( *  the spinlock. It is unlikely that there are always some threads that hold ) s
+5 346 M
+( *  the spinlock of mutex. So it is better than we use spinlock \(xchg\) as ) s
+5 338 M
+( *  implementation of mutex directly because we can not predict what the ) s
+5 330 M
+( *  critical section mutex is trying to protect. So spinlock help mutex somewhat) s
+5 322 M
+( *  approximate bounded waiting.) s
+5 314 M
+( *) s
+5 306 M
+( *  @author Ke Wu \(kewu\)) s
+5 298 M
+( *  @author Jian Wang \(jianwan3\)) s
+5 290 M
+( *) s
+5 282 M
+( *  @bug No known bugs.) s
+5 274 M
+( */) s
+5 258 M
+(#include <mutex.h>) s
+5 250 M
+(#include <stdlib.h>) s
+5 242 M
+(#include <syscall.h>) s
+5 234 M
+(#include <thr_internals.h>) s
+5 226 M
+(#include <simics.h>) s
+5 218 M
+(#include <stdio.h>) s
+5 202 M
+(/** @brief Initialize mutex) s
+5 194 M
+( *  ) s
+5 186 M
+( *  @param mp The mutex to initiate) s
+5 178 M
+( *) s
+5 170 M
+( *  @return 0 on success; -1 on error) s
+5 162 M
+( */) s
+5 154 M
+(int mutex_init\(mutex_t *mp\) {) s
+5 146 M
+(    mp->lock_available = 1; ) s
+5 138 M
+(    SPINLOCK_INIT\(&mp->inner_lock\);) s
+5 130 M
+(    int is_error = queue_init\(&mp->deque\);) s
+5 122 M
+(    return is_error ? -1 : 0;) s
+5 114 M
+(}) s
+5 98 M
+(/** @brief Destroy mutex) s
+5 90 M
+( *  ) s
+5 82 M
+( *  @param mp The mutex to destory) s
+5 74 M
+( *) s
+5 66 M
+( *  @return void) s
+5 58 M
+( */) s
+5 50 M
+(void mutex_destroy\(mutex_t *mp\) {) s
+5 42 M
+(    SPINLOCK_LOCK\(&mp->inner_lock\);) s
+5 26 M
+(    if \(mp->lock_available < 0\) {) s
+5 18 M
+(        // try to destroy a destroied mutex) s
+5 10 M
+(        panic\("mutex %p has already been destroied!", mp\);) s
+5 2 M
+(    }) s
+377 482 M
+(    while \(mp->lock_available != 1\) {) s
+377 474 M
+(        // illegal, mutex is locked) s
+377 466 M
+(        lprintf\("Destroy mutex %p failed, mutex is locked, ") s
+377 458 M
+(                "will try again...", mp\);) s
+377 450 M
+(        printf\("Destroy mutex %p failed, mutex is locked, ") s
+377 442 M
+(                "will try again...\\n", mp\);) s
+377 434 M
+(        SPINLOCK_UNLOCK\(&mp->inner_lock\);) s
+377 426 M
+(        yield\(-1\);) s
+377 418 M
+(        SPINLOCK_LOCK\(&mp->inner_lock\);) s
+377 410 M
+(    }) s
+377 394 M
+(    while \(queue_destroy\(&mp->deque\) < 0\){) s
+377 386 M
+(        // illegal, some threads are blocked waiting on it) s
+377 378 M
+(        lprintf\("Destroy mutex %p failed, some threads are blocking on it, ") s
+377 370 M
+(                "will try again...", mp\);) s
+377 362 M
+(        printf\("Destroy mutex %p failed, some threads are blocking on it, ") s
+377 354 M
+(                "will try again...\\n", mp\);) s
+377 346 M
+(        SPINLOCK_UNLOCK\(&mp->inner_lock\);) s
+377 338 M
+(        yield\(-1\);) s
+377 330 M
+(        SPINLOCK_LOCK\(&mp->inner_lock\);) s
+377 322 M
+(    }) s
+377 306 M
+(    mp->lock_available = -1;) s
+377 290 M
+(    SPINLOCK_UNLOCK\(&mp->inner_lock\);) s
+377 282 M
+(}) s
+377 266 M
+(/** @brief Lock mutex) s
+377 258 M
+( *  ) s
+377 250 M
+( *  A thread will gain exclusive access to the region) s
+377 242 M
+( *  after this call if it successfully acquires the lock) s
+377 234 M
+( *  until it calles mutex_unlock; or, it will block until) s
+377 226 M
+( *  it gets the lock if other thread is holding the lock) s
+377 218 M
+( *) s
+377 210 M
+( *  @param mp The mutex to lock) s
+377 202 M
+( *) s
+377 194 M
+( *  @return void) s
+377 186 M
+( */) s
+377 178 M
+(void mutex_lock\(mutex_t *mp\) {) s
+377 170 M
+(    SPINLOCK_LOCK\(&mp->inner_lock\);) s
+377 162 M
+(    if \(mp->lock_available < 0\) {) s
+377 154 M
+(        // try to lock a destroied mutex) s
+377 146 M
+(        panic\("mutex %p has already been destroied!", mp\);) s
+377 138 M
+(    }) s
+377 122 M
+(    if \(mp->lock_available\){) s
+377 114 M
+(        // mutex is unlocked, get the mutex lock directly and set it to locked) s
+377 106 M
+(        mp->lock_available = 0;) s
+377 98 M
+(        SPINLOCK_UNLOCK\(&mp->inner_lock\);) s
+377 90 M
+(    } else {) s
+377 82 M
+(        // mutex is locked, enter the tail of queue to wait) s
+377 74 M
+(        node_t *tmp = malloc\(sizeof\(node_t\)\);) s
+377 66 M
+(        while \(!tmp\) {) s
+377 58 M
+(            lprintf\("malloc failed, will try again..."\);) s
+377 50 M
+(            printf\("malloc failed, will try again...\\n"\);) s
+377 42 M
+(            yield\(-1\);) s
+377 34 M
+(            tmp = malloc\(sizeof\(node_t\)\);) s
+377 26 M
+(        }) s
+377 18 M
+(        tmp->ktid = thr_getktid\(\);) s
+377 10 M
+(        tmp->reject = 0;) s
+_R
+S
+%%Page: (2) 18
+%%BeginPageSetup
+_S
+90 rotate
+24 -574 translate
+/pagenum 2 def
+/fname (./user/libthread/mutex.c) def
+/fdir (./user/libthread) def
+/ftail (mutex.c) def
+% User defined strings:
+/pagenumstr (2) def
+/moddatestr (02/19/16) def
+/modtimestr (19:57:41) def
+/user_header_p false def
+/user_footer_p false def
+%%EndPageSetup
+column_lines
+do_header
+5 490 M
+(        enqueue\(&mp->deque, tmp\);) s
+5 474 M
+(        SPINLOCK_UNLOCK\(&mp->inner_lock\);) s
+5 458 M
+(        // while is necessary, reject is used to indicate if the thread has been) s
+5 450 M
+(        // dequeued by others) s
+5 442 M
+(        while\(!tmp->reject\) {) s
+5 434 M
+(            yield\(-1\);) s
+5 426 M
+(        }) s
+5 410 M
+(        free\(tmp\);) s
+5 402 M
+(    }) s
+5 394 M
+(}) s
+5 378 M
+(/** @brief Unlock mutex) s
+5 370 M
+( *  ) s
+5 362 M
+( *  A thread's exclusive access to the region before this call) s
+5 354 M
+( *  till mutex_lock will be lost after this call and other threads) s
+5 346 M
+( *  awaiting the lock will have a chance to gain the lock.) s
+5 338 M
+( *) s
+5 330 M
+( *  @param mp The mutex to unlock) s
+5 322 M
+( *) s
+5 314 M
+( *  @return void) s
+5 306 M
+( */) s
+5 298 M
+(void mutex_unlock\(mutex_t *mp\) {) s
+5 290 M
+(    SPINLOCK_LOCK\(&mp->inner_lock\);) s
+5 274 M
+(    if \(mp->lock_available < 0\) {) s
+5 266 M
+(        // try to unlock a destroied mutex) s
+5 258 M
+(        panic\("mutex %p has already been destroied!", mp\);) s
+5 250 M
+(    }) s
+5 234 M
+(    while \(mp->lock_available == 1\) {) s
+5 226 M
+(        lprintf\("try to unlock an unlocked mutex %p, ") s
+5 218 M
+(                "will wait until it is locked", mp\);) s
+5 210 M
+(        printf\("try to unlock an unlocked mutex %p, ") s
+5 202 M
+(                "will wait until it is locked\\n", mp\);) s
+5 194 M
+(        SPINLOCK_UNLOCK\(&mp->inner_lock\);) s
+5 186 M
+(        yield\(-1\);) s
+5 178 M
+(        SPINLOCK_LOCK\(&mp->inner_lock\);) s
+5 170 M
+(    }) s
+5 154 M
+(    node_t *tmp = dequeue\(&mp->deque\);) s
+5 138 M
+(    if \(!tmp\) {) s
+5 130 M
+(        // no thread is waiting the mutex, set mutex as available ) s
+5 122 M
+(        mp->lock_available = 1;) s
+5 114 M
+(        SPINLOCK_UNLOCK\(&mp->inner_lock\);) s
+5 106 M
+(    } else {) s
+5 98 M
+(        // some threads are waiting the mutex, awaken the thread in the head of) s
+5 90 M
+(        // queue) s
+5 82 M
+(        int tmp_ktid = tmp->ktid;) s
+5 74 M
+(        tmp->reject = 1;) s
+5 66 M
+(        SPINLOCK_UNLOCK\(&mp->inner_lock\);) s
+5 58 M
+(        yield\(tmp_ktid\);) s
+5 50 M
+(    }) s
+5 42 M
+(}) s
+_R
+S
+%%Page: (1) 19
+%%BeginPageSetup
+_S
+90 rotate
+24 -574 translate
+/pagenum 1 def
+/fname (./user/libthread/panic.c) def
+/fdir (./user/libthread) def
+/ftail (panic.c) def
+% User defined strings:
+/pagenumstr (1) def
+/moddatestr (02/19/16) def
+/modtimestr (08:31:51) def
+/user_header_p false def
+/user_footer_p false def
+%%EndPageSetup
+column_lines
+do_header
+5 490 M
+(/* ) s
+5 482 M
+( * Copyright \(c\) 1996-1995 The University of Utah and) s
+5 474 M
+( * the Computer Systems Laboratory at the University of Utah \(CSL\).) s
+5 466 M
+( * All rights reserved.) s
+5 458 M
+( *) s
+5 450 M
+( * Permission to use, copy, modify and distribute this software is hereby) s
+5 442 M
+( * granted provided that \(1\) source code retains these copyright, permission,) s
+5 434 M
+( * and disclaimer notices, and \(2\) redistributions including binaries) s
+5 426 M
+( * reproduce the notices in supporting documentation, and \(3\) all advertising) s
+5 418 M
+( * materials mentioning features or use of this software display the following) s
+5 410 M
+( * acknowledgement: ``This product includes software developed by the) s
+5 402 M
+( * Computer Systems Laboratory at the University of Utah.'') s
+5 394 M
+( *) s
+5 386 M
+( * THE UNIVERSITY OF UTAH AND CSL ALLOW FREE USE OF THIS SOFTWARE IN ITS "AS) s
+5 378 M
+( * IS" CONDITION.  THE UNIVERSITY OF UTAH AND CSL DISCLAIM ANY LIABILITY OF) s
+5 370 M
+( * ANY KIND FOR ANY DAMAGES WHATSOEVER RESULTING FROM THE USE OF THIS SOFTWARE.) s
+5 362 M
+( *) s
+5 354 M
+( * CSL requests users of this software to return to csl-dist@cs.utah.edu any) s
+5 346 M
+( * improvements that they make and grant CSL redistribution rights.) s
+5 338 M
+( */) s
+5 322 M
+(#include <stdio.h>) s
+5 314 M
+(#include <stdarg.h>) s
+5 306 M
+(#include <stdlib.h>) s
+5 298 M
+(#include <simics.h>) s
+5 282 M
+(/*) s
+5 274 M
+( * This function is called by the assert\(\) macro defined in assert.h;) s
+5 266 M
+( * it's also a nice simple general-purpose panic function.) s
+5 258 M
+( */) s
+5 250 M
+(void panic\(const char *fmt, ...\)) s
+5 242 M
+({) s
+5 234 M
+(        va_list vl;) s
+5 226 M
+(        char buf[80];) s
+5 210 M
+(        va_start\(vl, fmt\);) s
+5 202 M
+(        vsnprintf\(buf, sizeof \(buf\), fmt, vl\);) s
+5 194 M
+(        va_end\(vl\);) s
+5 186 M
+(        lprintf\(buf\);) s
+5 170 M
+(        va_start\(vl, fmt\);) s
+5 162 M
+(        vprintf\(fmt, vl\);) s
+5 154 M
+(        va_end\(vl\);) s
+5 146 M
+(        printf\("\\n"\);) s
+5 130 M
+(        volatile static int side_effect = 0;) s
+5 122 M
+(        while \(1\) {) s
+5 114 M
+(                // exact authorship uncertain, popularized by Heinlein) s
+5 106 M
+(                printf\("When in danger or in doubt, run in circles, scream and shout.\\) s
+5 98 M
+(n"\);) s
+5 90 M
+(                lprintf\("When in danger or in doubt, run in circles, scream and shout.) s
+5 82 M
+("\);) s
+5 74 M
+(                ++side_effect;) s
+5 66 M
+(        }) s
+5 58 M
+(}) s
+_R
+S
+%%Page: (1) 20
+%%BeginPageSetup
+_S
+90 rotate
+24 -574 translate
+/pagenum 1 def
+/fname (./user/libthread/queue.c) def
+/fdir (./user/libthread) def
+/ftail (queue.c) def
+% User defined strings:
+/pagenumstr (1) def
+/moddatestr (02/19/16) def
+/modtimestr (18:46:25) def
+/user_header_p false def
+/user_footer_p false def
+%%EndPageSetup
+column_lines
+do_header
+5 490 M
+(/** @file queue.c) s
+5 482 M
+( *) s
+5 474 M
+( *  @brief This file contains the implementation of a double-ended queue) s
+5 466 M
+( *) s
+5 458 M
+( *  @author Ke Wu <kewu@andrew.cmu.edu>) s
+5 450 M
+( *  @bug None known) s
+5 442 M
+( */) s
+5 426 M
+(#include <stdlib.h>) s
+5 418 M
+(#include <queue.h>) s
+5 402 M
+(/** @brief Initialize queue) s
+5 394 M
+( *  ) s
+5 386 M
+( *  @param deque The double-ended queue) s
+5 378 M
+( *  ) s
+5 370 M
+( *  @return 0 on success; -1 on error) s
+5 362 M
+( */) s
+5 354 M
+(int queue_init\(deque_t *deque\){) s
+5 346 M
+(    deque->head = malloc\(sizeof\(node_t\)\);) s
+5 338 M
+(    deque->tail = malloc\(sizeof\(node_t\)\);) s
+5 330 M
+(    if \(!deque->head || !deque->tail\)) s
+5 322 M
+(        return -1;) s
+5 314 M
+(    deque->head->next = deque->tail;) s
+5 306 M
+(    deque->head->prev = NULL;) s
+5 298 M
+(    deque->tail->prev = deque->head;) s
+5 290 M
+(    deque->tail->next = NULL;) s
+5 282 M
+(    return 0;) s
+5 274 M
+(}) s
+5 258 M
+(/** @brief Enqueue element in deque) s
+5 250 M
+( *  ) s
+5 242 M
+( *  @param deque The double-ended queue to enqueue element) s
+5 234 M
+( *  @param element The element to enqueue) s
+5 226 M
+( *  ) s
+5 218 M
+( *  @return 0 on success; -1 on error) s
+5 210 M
+( */) s
+5 202 M
+(void enqueue\(deque_t *deque, node_t* element\) {) s
+5 194 M
+(    element->prev = deque->tail->prev;) s
+5 186 M
+(    element->next = deque->tail;) s
+5 178 M
+(    deque->tail->prev->next = element;) s
+5 170 M
+(    deque->tail->prev = element;) s
+5 162 M
+(}) s
+5 146 M
+(/** @brief Dequeue an element) s
+5 138 M
+( *  ) s
+5 130 M
+( *  @param deque The double-ended queue to dequeue) s
+5 122 M
+( *  ) s
+5 114 M
+( *  @return An element on success; NULL on error) s
+5 106 M
+( */) s
+5 98 M
+(node_t* dequeue\(deque_t *deque\) {) s
+5 90 M
+(    if \(deque->head->next == deque->tail\)) s
+5 82 M
+(        return NULL;) s
+5 74 M
+(    node_t* element = deque->head->next;) s
+5 66 M
+(    deque->head->next = deque->head->next->next;) s
+5 58 M
+(    deque->head->next->prev = deque->head;) s
+5 50 M
+(    return element;) s
+5 42 M
+(}) s
+5 26 M
+(/** @brief Destory a queue) s
+5 18 M
+( *  ) s
+5 10 M
+( *  @param deque The double-ended queue to destroy) s
+5 2 M
+( *  ) s
+377 490 M
+( *  @return 0 on success; -1 on error) s
+377 482 M
+( */) s
+377 474 M
+(int queue_destroy\(deque_t *deque\) {) s
+377 466 M
+(    if \(deque->head->next != deque->tail\)) s
+377 458 M
+(        return -1;) s
+377 450 M
+(    free\(deque->head\);) s
+377 442 M
+(    free\(deque->tail\);) s
+377 434 M
+(    deque->head = NULL;) s
+377 426 M
+(    deque->tail = NULL;) s
+377 418 M
+(    return 0;) s
+377 410 M
+(}) s
+377 394 M
+(/** @brief Check if a queue is active) s
+377 386 M
+( *  ) s
+377 378 M
+( *  @param deque The double-ended queue to check) s
+377 370 M
+( *  ) s
+377 362 M
+( *  @return 1 if queue is active; 0 else) s
+377 354 M
+( */) s
+377 346 M
+(int queue_is_active\(deque_t *deque\) {) s
+377 338 M
+(    return \(!deque->head || !deque->tail\) ? 0 : 1;) s
+377 330 M
+(}) s
+_R
+S
+%%Page: (1) 21
+%%BeginPageSetup
+_S
+90 rotate
+24 -574 translate
+/pagenum 1 def
+/fname (./user/libthread/queue.h) def
+/fdir (./user/libthread) def
+/ftail (queue.h) def
+% User defined strings:
+/pagenumstr (1) def
+/moddatestr (02/19/16) def
+/modtimestr (20:37:39) def
+/user_header_p false def
+/user_footer_p false def
+%%EndPageSetup
+column_lines
+do_header
+5 490 M
+(/** @file queue.h) s
+5 482 M
+( *  @brief Function prototypes of a double-ended queue and declaraion of node) s
+5 474 M
+( *         data structure. ) s
+5 466 M
+( *) s
+5 458 M
+( *  @author Ke Wu \(kewu\)) s
+5 450 M
+( *) s
+5 442 M
+( *  @bug No known bugs.) s
+5 434 M
+( */) s
+5 418 M
+(#ifndef _QUEUE_H_) s
+5 410 M
+(#define _QUEUE_H_) s
+5 394 M
+(/** @brief The node strcuture of double-ended queue */) s
+5 386 M
+(typedef struct node{) s
+5 378 M
+(    /** @brief Data field. The thread id assigned by the kernel */) s
+5 370 M
+(    int ktid;) s
+5 362 M
+(    /** @brief Data field. A boolean flag */) s
+5 354 M
+(    int reject;) s
+5 346 M
+(    /** @brief Pointer to next node */) s
+5 338 M
+(    struct node *next;) s
+5 330 M
+(    /** @brief Pointer to prev node */) s
+5 322 M
+(    struct node *prev;) s
+5 314 M
+(} node_t;) s
+5 298 M
+(/** @brief The strucure of a double-ended queue */) s
+5 290 M
+(typedef struct deque{) s
+5 282 M
+(    /** @brief Head node */) s
+5 274 M
+(    node_t *head;) s
+5 266 M
+(    /** @brief Tail node */) s
+5 258 M
+(    node_t *tail;) s
+5 250 M
+(} deque_t;) s
+5 234 M
+(int queue_init\(deque_t *deque\);) s
+5 218 M
+(void enqueue\(deque_t *deque, node_t* element\);) s
+5 202 M
+(node_t* dequeue\(deque_t *deque\);) s
+5 186 M
+(int queue_destroy\(deque_t *deque\);) s
+5 170 M
+(int queue_is_active\(deque_t *deque\);) s
+5 154 M
+(#endif) s
+_R
+S
+%%Page: (1) 22
+%%BeginPageSetup
+_S
+90 rotate
+24 -574 translate
+/pagenum 1 def
+/fname (./user/libthread/rwlock.c) def
+/fdir (./user/libthread) def
+/ftail (rwlock.c) def
+% User defined strings:
+/pagenumstr (1) def
+/moddatestr (02/19/16) def
+/modtimestr (19:57:41) def
+/user_header_p false def
+/user_footer_p false def
+%%EndPageSetup
+column_lines
+do_header
+5 490 M
+(/** @file rwlock.c) s
+5 482 M
+( *  @brief Contains the implementation of rwlock) s
+5 474 M
+( *) s
+5 466 M
+( *  rwlock_t contains the following fields) s
+5 458 M
+( *     1. lock_state: it is used to indicate the state of rwlock. ) s
+5 450 M
+( *        lock_state == 0 means rwlock is available \(unlocked\).) s
+5 442 M
+( *        lock_state > 0 means some readers are holding the lock \(shared\), the ) s
+5 434 M
+( *                       value of lock_state indicates how many readers are ) s
+5 426 M
+( *                       holding the lock) s
+5 418 M
+( *        lock_state == -1 means a writer is holding the lock \(exclusvie\)) s
+5 410 M
+( *        lock_state == -2 means the rwlock is destoried) s
+5 402 M
+( *     2. writer_waiting_count: indicates how many writers are waiting the lock) s
+5 394 M
+( *     3. reader_waiting_count: indicates how many readers are waiting the lock) s
+5 386 M
+( *     4. mutex_inner: a mutex to protect critical section of rwlock code.) s
+5 378 M
+( *     5. cond_reader: conditional variable for readers to block) s
+5 370 M
+( *     6. cond_writer: conditional variable for writers to block) s
+5 362 M
+( *) s
+5 354 M
+( *) s
+5 346 M
+( *) s
+5 338 M
+( *  @author Ke Wu \(kewu\)) s
+5 330 M
+( *) s
+5 322 M
+( *  @bug No known bugs.) s
+5 314 M
+( */) s
+5 306 M
+(#include <rwlock.h>) s
+5 298 M
+(#include <mutex.h>) s
+5 290 M
+(#include <cond.h>) s
+5 282 M
+(#include <assert.h>) s
+5 274 M
+(#include <simics.h>) s
+5 266 M
+(#include <stdio.h>) s
+5 250 M
+(/** @brief Initialize rwlock) s
+5 242 M
+( *) s
+5 234 M
+( *  @param rwlock The rwlock to initialize) s
+5 226 M
+( *  @return 0 on success; -1 on error) s
+5 218 M
+( */) s
+5 210 M
+(int rwlock_init\( rwlock_t *rwlock \) { ) s
+5 202 M
+(    rwlock->lock_state = 0;) s
+5 194 M
+(    rwlock->writer_waiting_count = 0;) s
+5 186 M
+(    rwlock->reader_waiting_count = 0;) s
+5 170 M
+(    int is_error = 0;) s
+5 162 M
+(    is_error |= mutex_init\(&rwlock->mutex_inner\);) s
+5 154 M
+(    is_error |= cond_init\(&rwlock->cond_reader\);) s
+5 146 M
+(    is_error |= cond_init\(&rwlock->cond_writer\);) s
+5 138 M
+(    return is_error ? -1 : 0;) s
+5 130 M
+(}) s
+5 114 M
+(/** @brief Lock rwlock) s
+5 106 M
+( *) s
+5 98 M
+( *  @param rwlock The rwlock to acquire lock) s
+5 90 M
+( *  @param type Type of lock to acquire \(RWLOCK_READ or RWLOCK_WRITE\)) s
+5 82 M
+( *) s
+5 74 M
+( *  @return void) s
+5 66 M
+( */) s
+5 58 M
+(void rwlock_lock\( rwlock_t *rwlock, int type \) {) s
+5 50 M
+(    if \(type == RWLOCK_READ\) {) s
+5 42 M
+(        mutex_lock\(&rwlock->mutex_inner\);) s
+5 26 M
+(        if \(rwlock->lock_state == -2\) {) s
+5 18 M
+(            panic\("readers/writers lock %p has already been destroyed!", ) s
+5 10 M
+(                    rwlock\);) s
+5 2 M
+(        }) s
+377 482 M
+(        rwlock->reader_waiting_count++;) s
+377 474 M
+(        while \(rwlock->lock_state != 0 || rwlock->writer_waiting_count > 0\) {) s
+377 466 M
+(            // only when there is no writer is waiting can new reader hold the) s
+377 458 M
+(            // shared reader lock \(favor writer\)) s
+377 450 M
+(            if \(rwlock->lock_state > 0 && rwlock->writer_waiting_count == 0\) ) s
+377 442 M
+(                break;) s
+377 434 M
+(            cond_wait\(&rwlock->cond_reader, &rwlock->mutex_inner\);) s
+377 426 M
+(        }) s
+377 418 M
+(        rwlock->reader_waiting_count--;) s
+377 402 M
+(        rwlock->lock_state++;) s
+377 386 M
+(        mutex_unlock\(&rwlock->mutex_inner\);) s
+377 378 M
+(    } else {) s
+377 370 M
+(        mutex_lock\(&rwlock->mutex_inner\);) s
+377 354 M
+(        if \(rwlock->lock_state == -2\) {) s
+377 346 M
+(            panic\("readers/writers lock %p has already been destroied!", ) s
+377 338 M
+(                    rwlock\);) s
+377 330 M
+(        }) s
+377 314 M
+(        rwlock->writer_waiting_count++;) s
+377 306 M
+(        while \(rwlock->lock_state != 0\) ) s
+377 298 M
+(            cond_wait\(&rwlock->cond_writer, &rwlock->mutex_inner\);) s
+377 290 M
+(        rwlock->writer_waiting_count--;) s
+377 274 M
+(        rwlock->lock_state = -1;) s
+377 258 M
+(        mutex_unlock\(&rwlock->mutex_inner\);) s
+377 250 M
+(    }) s
+377 242 M
+(}) s
+377 226 M
+(/** @brief Unlock rwlock) s
+377 218 M
+( *) s
+377 210 M
+( *  Whether the type of rwlock is a read lock or write lock, calling this) s
+377 202 M
+( *  function marks the end of the locked state.) s
+377 194 M
+( *  ) s
+377 186 M
+( *  @param rwlock The rwlock to release lock) s
+377 178 M
+( *) s
+377 170 M
+( *  @return void) s
+377 162 M
+( */) s
+377 154 M
+(void rwlock_unlock\( rwlock_t *rwlock \) {) s
+377 146 M
+(    mutex_lock\(&rwlock->mutex_inner\);) s
+377 130 M
+(    if \(rwlock->lock_state == -2\) {) s
+377 122 M
+(        panic\("readers/writers lock %p has already been destroied!", rwlock\);) s
+377 114 M
+(    }) s
+377 98 M
+(    while \(rwlock->lock_state == 0\) {) s
+377 90 M
+(        lprintf\("try to unlock an unlocked rwlock %p, ") s
+377 82 M
+(                "will wait until it is locked", rwlock\);) s
+377 74 M
+(        printf\("try to unlock an unlocked rwlock %p, ") s
+377 66 M
+(                "will wait until it is locked\\n", rwlock\);) s
+377 58 M
+(        mutex_unlock\(&rwlock->mutex_inner\);) s
+377 50 M
+(        yield\(-1\);) s
+377 42 M
+(        mutex_lock\(&rwlock->mutex_inner\);) s
+377 34 M
+(    }) s
+377 18 M
+(    rwlock->lock_state = \(rwlock->lock_state>0\) ? ) s
+377 10 M
+(        \(rwlock->lock_state-1\) : ) s
+377 2 M
+(        \(rwlock->lock_state+1\);) s
+_R
+S
+%%Page: (2) 23
+%%BeginPageSetup
+_S
+90 rotate
+24 -574 translate
+/pagenum 2 def
+/fname (./user/libthread/rwlock.c) def
+/fdir (./user/libthread) def
+/ftail (rwlock.c) def
+% User defined strings:
+/pagenumstr (2) def
+/moddatestr (02/19/16) def
+/modtimestr (19:57:41) def
+/user_header_p false def
+/user_footer_p false def
+%%EndPageSetup
+column_lines
+do_header
+5 482 M
+(    if \(rwlock->lock_state == 0\) {) s
+5 474 M
+(        // if some writers are waiting, get the lock to the writer\(favor writer\)) s
+5 466 M
+(        if \(rwlock->writer_waiting_count > 0\) ) s
+5 458 M
+(            cond_signal\(&rwlock->cond_writer\);) s
+5 450 M
+(        else) s
+5 442 M
+(            cond_broadcast\(&rwlock->cond_reader\);) s
+5 434 M
+(    }) s
+5 418 M
+(    mutex_unlock\(&rwlock->mutex_inner\);) s
+5 410 M
+(}) s
+5 394 M
+(/** @brief Destory rwlock) s
+5 386 M
+( *) s
+5 378 M
+( *  @param rwlock The rwlock to deactivate) s
+5 370 M
+( *) s
+5 362 M
+( *  @return void) s
+5 354 M
+( */) s
+5 346 M
+(void rwlock_destroy\( rwlock_t *rwlock \) {) s
+5 338 M
+(    mutex_lock\(&rwlock->mutex_inner\);) s
+5 322 M
+(    if \(rwlock->lock_state == -2\) {) s
+5 314 M
+(        panic\("readers/writers lock %p has already been destroied!", rwlock\);) s
+5 306 M
+(    }) s
+5 290 M
+(    // It's illegal to invoke this function while the lock is held or) s
+5 282 M
+(    // while other threads are waiting on it) s
+5 274 M
+(    while \(rwlock->lock_state != 0 || ) s
+5 266 M
+(            rwlock->reader_waiting_count != 0 || ) s
+5 258 M
+(            rwlock->writer_waiting_count != 0\) {) s
+5 250 M
+(        lprintf\("Destroy rwlock %p failed, rwlock is locked, ") s
+5 242 M
+(                "will try again...", rwlock\);) s
+5 234 M
+(        printf\("Destroy rwlock %p failed, rwlock is locked, ") s
+5 226 M
+(                "will try again...\\n", rwlock\);) s
+5 218 M
+(        mutex_unlock\(&rwlock->mutex_inner\);) s
+5 210 M
+(        yield\(-1\);) s
+5 202 M
+(        mutex_lock\(&rwlock->mutex_inner\);) s
+5 194 M
+(    }) s
+5 178 M
+(    rwlock->lock_state = -2;) s
+5 162 M
+(    mutex_unlock\(&rwlock->mutex_inner\);) s
+5 146 M
+(    mutex_destroy\(&rwlock->mutex_inner\);) s
+5 138 M
+(    cond_destroy\(&rwlock->cond_reader\);) s
+5 130 M
+(    cond_destroy\(&rwlock->cond_writer\);) s
+5 122 M
+(}) s
+5 106 M
+(/** @brief Downgrade rwlock) s
+5 98 M
+( *) s
+5 90 M
+( *  @param rwlock The rwlock to downgrade, must be locked in RWLOCK_WRITE mode) s
+5 82 M
+( *  ) s
+5 74 M
+( *  When the function returns, no threads hold the lock in RWLOCK_WRITE mode;) s
+5 66 M
+( *  the invoking thread, and possibly some other threads, hold the lock in) s
+5 58 M
+( *  RWLOCK_READ mode; previously blocked or newly arriving writers must still ) s
+5 50 M
+( *  wait for the lock to be released entirely.) s
+5 42 M
+( *) s
+5 34 M
+( *  @return void) s
+5 26 M
+( */) s
+5 18 M
+(void rwlock_downgrade\( rwlock_t *rwlock\) {) s
+5 10 M
+(    mutex_lock\(&rwlock->mutex_inner\);) s
+5 2 M
+(    if \(rwlock->lock_state != -1\){) s
+377 490 M
+(        // illegal) s
+377 482 M
+(        panic\("readers/writers lock %p cannot be downgraded while not locked",) s
+377 474 M
+(                rwlock\);) s
+377 466 M
+(    }) s
+377 458 M
+(    rwlock->lock_state = 1;) s
+377 450 M
+(    cond_broadcast\(&rwlock->cond_reader\);) s
+377 442 M
+(    mutex_unlock\(&rwlock->mutex_inner\);) s
+377 434 M
+(}) s
+_R
+S
+%%Page: (1) 24
+%%BeginPageSetup
+_S
+90 rotate
+24 -574 translate
+/pagenum 1 def
+/fname (./user/libthread/sem.c) def
+/fdir (./user/libthread) def
+/ftail (sem.c) def
+% User defined strings:
+/pagenumstr (1) def
+/moddatestr (02/19/16) def
+/modtimestr (19:40:17) def
+/user_header_p false def
+/user_footer_p false def
+%%EndPageSetup
+column_lines
+do_header
+5 490 M
+(/** @file sem.c) s
+5 482 M
+( *) s
+5 474 M
+( *  @brief This file contains implementation of semaphore built) s
+5 466 M
+( *  on top of mutex and condition variables) s
+5 458 M
+( *  ) s
+5 450 M
+( *  The semaphore contains three fields: a mutux to guard access to changes to) s
+5 442 M
+( *  its other fields, a condition variable to wait and signal threads according) s
+5 434 M
+( *  to available resources, and a counter indicating the number of resources ) s
+5 426 M
+( *  availbale.) s
+5 418 M
+( *  ) s
+5 410 M
+( *  @author Jian Wang \(jianwan3\)) s
+5 402 M
+( *  @author Ke Wu \(kewu\)) s
+5 394 M
+( *) s
+5 386 M
+( *  @bug None known) s
+5 378 M
+( */) s
+5 362 M
+(#include <sem.h>) s
+5 354 M
+(#include <assert.h>) s
+5 338 M
+(/** @brief Initialize semaphore) s
+5 330 M
+( *  ) s
+5 322 M
+( *  @param sem The semaphore to initialize) s
+5 314 M
+( *  @param count The value to initialize sem to) s
+5 306 M
+( *) s
+5 298 M
+( *  @return 0 on success; -1 on error) s
+5 290 M
+( */) s
+5 282 M
+(int sem_init\(sem_t *sem, int count\) {) s
+5 274 M
+(    if\(\(mutex_init\(&sem->mutex\) < 0\) ||) s
+5 266 M
+(            \(cond_init\(&sem->cond\) < 0\)\) {) s
+5 258 M
+(        return -1;) s
+5 250 M
+(    }) s
+5 234 M
+(    if\(count < 0\) {) s
+5 226 M
+(        return -1;) s
+5 218 M
+(    }) s
+5 202 M
+(    sem->count = count; ) s
+5 186 M
+(    return 0;) s
+5 178 M
+(}) s
+5 162 M
+(/** @brief Decrement a semaphore value) s
+5 154 M
+( *  ) s
+5 146 M
+( *  May block indefinitely until it is legal to perfom the decrement) s
+5 138 M
+( *) s
+5 130 M
+( *  @param sem The semaphore to decrement value) s
+5 122 M
+( *) s
+5 114 M
+( *  @return void) s
+5 106 M
+( */) s
+5 98 M
+(void sem_wait\(sem_t *sem\) {) s
+5 90 M
+(    mutex_lock\(&sem->mutex\);) s
+5 74 M
+(    if\(sem->count > 0\) {) s
+5 66 M
+(        sem->count--;) s
+5 58 M
+(    } else {) s
+5 50 M
+(        if \(sem->count < 0\) {) s
+5 42 M
+(            panic\("semaphore %p has already been destroied!", sem\);) s
+5 34 M
+(        }) s
+5 18 M
+(        // sem->count is 0, should block) s
+5 10 M
+(        while\(sem->count == 0\) {) s
+5 2 M
+(            cond_wait\(&sem->cond, &sem->mutex\);) s
+377 490 M
+(            // Waked up, but others calling sem_wait may have made ) s
+377 482 M
+(            // sem->count 0 again, may need to block again) s
+377 474 M
+(        }) s
+377 466 M
+(        sem->count--;) s
+377 458 M
+(    }) s
+377 442 M
+(    mutex_unlock\(&sem->mutex\);) s
+377 434 M
+(}) s
+377 418 M
+(/** @brief Increment a semaphore value) s
+377 410 M
+( *  ) s
+377 402 M
+( *  Wake up a thread waiting on the semaphore if there exists one) s
+377 394 M
+( *) s
+377 386 M
+( *  @param sem The semaphore to increment value) s
+377 378 M
+( *) s
+377 370 M
+( *  @return void) s
+377 362 M
+( */) s
+377 354 M
+(void sem_signal\(sem_t *sem\) {) s
+377 346 M
+(    mutex_lock\(&sem->mutex\);) s
+377 338 M
+(    ) s
+377 330 M
+(    if \(sem->count < 0\) {) s
+377 322 M
+(        panic\("semaphore %p has already been destroied!", sem\);) s
+377 314 M
+(    }) s
+377 298 M
+(    sem->count++;) s
+377 282 M
+(    mutex_unlock\(&sem->mutex\);) s
+377 266 M
+(    // Wake up one) s
+377 258 M
+(    cond_signal\(&sem->cond\);) s
+377 242 M
+(}) s
+377 226 M
+(/** @brief Deactivate a semaphore) s
+377 218 M
+( *  ) s
+377 210 M
+( *  @param sem The semaphore to deactivate) s
+377 202 M
+( *) s
+377 194 M
+( *  @return void) s
+377 186 M
+( */) s
+377 178 M
+(void sem_destroy\(sem_t *sem\) {) s
+377 162 M
+(    mutex_lock\(&sem->mutex\);) s
+377 146 M
+(    if \(sem->count < 0\) {) s
+377 138 M
+(        panic\("semaphore %p has already been destroied!", sem\);) s
+377 130 M
+(    }) s
+377 114 M
+(    sem->count = -1;) s
+377 106 M
+(    ) s
+377 98 M
+(    mutex_unlock\(&sem->mutex\);) s
+377 82 M
+(    mutex_destroy\(&sem->mutex\);) s
+377 74 M
+(    cond_destroy\(&sem->cond\);) s
+377 66 M
+(}) s
+_R
+S
+%%Page: (1) 25
+%%BeginPageSetup
+_S
+90 rotate
+24 -574 translate
+/pagenum 1 def
+/fname (./user/libthread/spinlock.h) def
+/fdir (./user/libthread) def
+/ftail (spinlock.h) def
+% User defined strings:
+/pagenumstr (1) def
+/moddatestr (02/19/16) def
+/modtimestr (19:57:41) def
+/user_header_p false def
+/user_footer_p false def
+%%EndPageSetup
+column_lines
+do_header
+5 490 M
+(/** @file spinlock.h) s
+5 482 M
+( *) s
+5 474 M
+( *  @brief Constains the macro implementation of spinlock) s
+5 466 M
+( *  ) s
+5 458 M
+( *  Using xchg insturction achieve a simple spinlock. ) s
+5 450 M
+( *  It simply tries to acqure a lock for a ) s
+5 442 M
+( *  limited times until it defers trying through yielding. The design ) s
+5 434 M
+( *  choice related to it is whether to yield immediately if a lock is not ) s
+5 426 M
+( *  available. In a single core machine, if a lock is not available, then it's ) s
+5 418 M
+( *  likely other thread not running is holding the lock, so the current thread ) s
+5 410 M
+( *  should yield immediately; in a multi-core machine, the thread that is ) s
+5 402 M
+( *  holding the lock may be running as well and is likely to release the lock ) s
+5 394 M
+( *  in a short time, so it makes sense for the current thread to try acquring ) s
+5 386 M
+( *  for a few times instead of yielding immediately. To adapt to work well in a) s
+5 378 M
+( *  multi-threaded environment, our spinlock tries a few times before it yields.) s
+5 370 M
+( *) s
+5 362 M
+( *  @author Jian Wang \(jianwan3\)) s
+5 354 M
+( *  @author Ke Wu \(kewu\)) s
+5 346 M
+( *  @bug No known bugs) s
+5 338 M
+( */) s
+5 330 M
+(#ifndef _SPINLOCK_H) s
+5 322 M
+(#define _SPINLOCK_H) s
+5 306 M
+(#include <thr_internals.h>) s
+5 298 M
+(#include <syscall.h>) s
+5 282 M
+(/**@ brief spinlock type */) s
+5 274 M
+(typedef int spinlock_t;) s
+5 258 M
+(/**@ brief Maximal number of spinning times trying to acquire a lock */) s
+5 250 M
+(#define MAX_SPIN_NUM  1000) s
+5 234 M
+(/**@ brief Initialize spin lock */) s
+5 226 M
+(#define SPINLOCK_INIT\(lock\)     *\(lock\) = 1) s
+5 210 M
+(/**@ brief Destory spin lock */) s
+5 202 M
+(#define SPINLOCK_DESTROY\(lock\)  asm_xchg\(lock, 0\)) s
+5 186 M
+(/**@ brief Lock spin lock */) s
+5 178 M
+(#define SPINLOCK_LOCK\(lock\)     do { \\) s
+5 170 M
+(    while \(1\) { \\) s
+5 162 M
+(        int i = 0; \\) s
+5 154 M
+(        while \(i<MAX_SPIN_NUM &&   \\) s
+5 146 M
+(                !asm_xchg\(lock, 0\)\) \\) s
+5 138 M
+(        i++; \\) s
+5 130 M
+(        if \(i==MAX_SPIN_NUM\) \\) s
+5 122 M
+(        yield\(-1\); \\) s
+5 114 M
+(        else \\) s
+5 106 M
+(        break; \\) s
+5 98 M
+(    } \\) s
+5 90 M
+(} while\(0\)) s
+5 74 M
+(/**@ brief Unlock spin lock */) s
+5 66 M
+(#define SPINLOCK_UNLOCK\(lock\)   asm_xchg\(lock, 1\)) s
+5 50 M
+(#endif /* _SPINLOCK_H */) s
+_R
+S
+%%Page: (1) 26
+%%BeginPageSetup
+_S
+90 rotate
+24 -574 translate
+/pagenum 1 def
+/fname (./user/libthread/thr_create_kernel.S) def
+/fdir (./user/libthread) def
+/ftail (thr_create_kernel.S) def
+% User defined strings:
+/pagenumstr (1) def
+/moddatestr (02/19/16) def
+/modtimestr (08:31:51) def
+/user_header_p false def
+/user_footer_p false def
+%%EndPageSetup
+column_lines
+do_header
+5 490 M
+(#include <syscall_int.h>) s
+5 474 M
+(.global thr_create_kernel) s
+5 466 M
+(.global thr_ret2exit) s
+5 450 M
+(thr_create_kernel:) s
+5 442 M
+(    movl    4\(%esp\), %ecx       # save addr of func) s
+5 434 M
+(    movl    8\(%esp\), %edx       # save value of new esp \(stack\)) s
+5 426 M
+(    int     $THREAD_FORK_INT    # fork a new thread) s
+5 418 M
+(    testl   %eax, %eax          # check if %eax is zero) s
+5 410 M
+(    je      .L2                 # return value == 0, new thread) s
+5 402 M
+(    ret                         # return value != 0, original thread) s
+5 394 M
+(  .L2:              ) s
+5 386 M
+(    movl    %edx, %esp          # 1. set esp to new stack) s
+5 378 M
+(    int     $GETTID_INT         # 2. get its ktid) s
+5 370 M
+(    movl    %eax, 4\(%esp\)       # 3. "push" its ktid to stack) s
+5 362 M
+(    call    arraytcb_set_ktid   # 4. set its ktid in arraytcb) s
+5 354 M
+(    addl    $8, %esp            # 5. "pop" index and ktid ) s
+5 346 M
+(    call    %ecx                # 6. call func) s
+5 338 M
+(  thr_ret2exit:) s
+5 330 M
+(    pushl   %eax                # push func's return value as the new param) s
+5 322 M
+(    call    thr_exit            # call thr_exit if func doesn't call itself) s
+5 306 M
+(    ) s
+_R
+S
+%%Page: (1) 27
+%%BeginPageSetup
+_S
+90 rotate
+24 -574 translate
+/pagenum 1 def
+/fname (./user/libthread/thr_internals.h) def
+/fdir (./user/libthread) def
+/ftail (thr_internals.h) def
+% User defined strings:
+/pagenumstr (1) def
+/moddatestr (02/19/16) def
+/modtimestr (19:45:57) def
+/user_header_p false def
+/user_footer_p false def
+%%EndPageSetup
+column_lines
+do_header
+5 490 M
+(/** @file thr_internals.h) s
+5 482 M
+( *) s
+5 474 M
+( *  @brief This file is used to define some internal functions for) s
+5 466 M
+( *         the thread library.) s
+5 458 M
+( *) s
+5 450 M
+( *  @author Jian Wang <jianwan3andrew.cmu.edu>) s
+5 442 M
+( *  @author Ke Wu <kewu@andrew.cmu.edu>) s
+5 434 M
+( */) s
+5 418 M
+(#ifndef THR_INTERNALS_H) s
+5 410 M
+(#define THR_INTERNALS_H) s
+5 394 M
+(/** @brief C wrapper for xchg\(lock_available, val\)) s
+5 386 M
+( *  ) s
+5 378 M
+( *  In the inside, it will atomically exchange *lock_available with val) s
+5 370 M
+( *) s
+5 362 M
+( *  @param lock_available The address of variable to be exchanged) s
+5 354 M
+( *  @param val The value to replace *lock_available) s
+5 346 M
+( * ) s
+5 338 M
+( *  @return The old value of \(*lock_availble\)) s
+5 330 M
+( */) s
+5 322 M
+(int asm_xchg\(int *lock_available, int val\);) s
+5 306 M
+(/** @brief Creates a new thread to run func\(args\) on a given stack) s
+5 298 M
+( *  ) s
+5 290 M
+( *  This function is writtrn in assembly. It will create a thread ) s
+5 282 M
+( *  \(a register set\) to run func\(args\) on a given stack.) s
+5 274 M
+( *) s
+5 266 M
+( *  To be more specific, this function will first save its two parameters to) s
+5 258 M
+( *  registers. Then it will invoke thread_fork which is a trap. After that, two) s
+5 250 M
+( *  threads will run the same code. The original thread will just return. The ) s
+5 242 M
+( *  new thread will first get its ktid, and call arraytcb_set_ktid\(\) to save its) s
+5 234 M
+( *  ktid in arraytcb. Then it will set its esp to new_stack, and call func\(\). ) s
+5 226 M
+( *  After return from func\(\), it will push the return value to stack, and call) s
+5 218 M
+( *  thr_exit\(\) if the thread doesn't call itself.) s
+5 210 M
+( *) s
+5 202 M
+( *  Note that the two paramters \(func, new_stack\) must be saved in registers) s
+5 194 M
+( *  before calling thread_fork. Because at first they are saved at the original) s
+5 186 M
+( *  thread's stack. After thread_fork, the new thread can't rely on the original ) s
+5 178 M
+( *  threads's stack to fetch these two paramters. Because at that time, the ) s
+5 170 M
+( *  stack maybe destroied by the original thread. ) s
+5 162 M
+( *  ) s
+5 154 M
+( *) s
+5 146 M
+( *  @param func The address of function for new thread to run) s
+5 138 M
+( *  @param new_stack The address of new stack \(esp\) for new thread to run on.) s
+5 130 M
+( *                   Note that the argument for new thread to run func\(args\) has ) s
+5 122 M
+( *                   been pushed to stack conforming to the calling conventions.) s
+5 114 M
+( * ) s
+5 106 M
+( *  @return On success the thread ID of the new thread is returned, on error a ) s
+5 98 M
+( *          negative number is returned) s
+5 90 M
+( */) s
+5 82 M
+(int thr_create_kernel\(void *\(*func\)\(void *\), void *new_stack\);) s
+5 66 M
+(int thr_getktid\(\);) s
+5 50 M
+(int thr_hashtableexit_init\(\);) s
+5 34 M
+(int thr_exitstatus_hashfunc\(void *key\);) s
+5 18 M
+(/** @brief Delete a thread from arraytcb and vanish) s
+5 10 M
+( *  ) s
+5 2 M
+( *  This function is called by thr_exit\(\) to delete a thread from arraytcb,) s
+377 490 M
+( *  deallocate its stack memory and call vanish\(\). The code is written in ) s
+377 482 M
+( *  assembly, but it equals to exceute the following code:) s
+377 474 M
+( *      if \(page_remove_info[1]\)) s
+377 466 M
+( *          remove_pages\(page_remove_info[0]\);) s
+377 458 M
+( *      if \(page_remove_info[3]\)) s
+377 450 M
+( *          remove_pages\(page_remove_info[2]\);) s
+377 442 M
+( *      if \(page_remove_info[5]\)) s
+377 434 M
+( *          remove_pages\(page_remove_info[4]\);) s
+377 426 M
+( *      SPINLOCK_UNLOCK\(&mutex_arraytcb->inner_lock\);) s
+377 418 M
+( *      vanish\(\);) s
+377 410 M
+( *  However, it must be written in assembly because when stack region is) s
+377 402 M
+( *  deallocated, the program can not rely on stack to call new functions ) s
+377 394 M
+( *  \(i.e. the following remove_pages\(\), SPINLOCK_UNLOCK\(\) and vanish\(\)\). So ) s
+377 386 M
+( *  asm_thr_exit\(\) will just use some registers to execute all code above.    ) s
+377 378 M
+( *) s
+377 370 M
+( *  @param inner_lock It is the addres of mutex_arraytcb->inner_lock. it is ) s
+377 362 M
+( *                 used to execute SPINLOCK_UNLOCK\(&mutex_arraytcb->inner_lock\);) s
+377 354 M
+( *  @param page_remove_info Address of the array page_remove_info. It is used to) s
+377 346 M
+( *                          indicate which pages should be deallcated. More info) s
+377 338 M
+( *                          please refer to thr_lib_helper.c ) s
+377 330 M
+( *                          get_pages_to_remove\(\).) s
+377 322 M
+( * ) s
+377 314 M
+( *  @return Should never return) s
+377 306 M
+( */) s
+377 298 M
+(void asm_thr_exit\(void *inner_lock, int* page_remove_info\);) s
+377 282 M
+(/** @brief Indicate a symbol in thr_create_kernel\(\)) s
+377 274 M
+( *  ) s
+377 266 M
+( *  This is used by set_rootthr_retaddr\(\) in thr_lib_helper.c to modify return) s
+377 258 M
+( *  address of master thread \(return address of main\(\)\) when the program become) s
+377 250 M
+( *  a multi-thread program. So that when main\(\) return it will go to ) s
+377 242 M
+( *  thr_ret2exit\(\) and call thr_exit\(\).) s
+377 234 M
+( *) s
+377 226 M
+( */) s
+377 218 M
+(void thr_ret2exit\(\);) s
+377 202 M
+(#endif /* THR_INTERNALS_H */) s
+_R
+S
+%%Page: (1) 28
+%%BeginPageSetup
+_S
+90 rotate
+24 -574 translate
+/pagenum 1 def
+/fname (./user/libthread/thr_lib.c) def
+/fdir (./user/libthread) def
+/ftail (thr_lib.c) def
+% User defined strings:
+/pagenumstr (1) def
+/moddatestr (02/19/16) def
+/modtimestr (18:46:25) def
+/user_header_p false def
+/user_footer_p false def
+%%EndPageSetup
+column_lines
+do_header
+5 490 M
+(/** @file thr_lib.c) s
+5 482 M
+( *  @brief This file contains implementation of thread management library ) s
+5 474 M
+( *) s
+5 466 M
+( *  This file contains thread management library including thr_init\(\), ) s
+5 458 M
+( *  thr_create\(\), thr_join\(\), thr_exit\(\), thr_getid\(\), thr_getktid\(\), ) s
+5 450 M
+( *  thr_yield\(\). Some functions will lock the entire arraytcb data strcuture to) s
+5 442 M
+( *  avoid race condition although we have figured out that probably it is better) s
+5 434 M
+( *  to allocate a mutex lock for each tcb structure to support more concurrency.) s
+5 426 M
+( *) s
+5 418 M
+( *  @bug No known bug) s
+5 410 M
+( */) s
+5 394 M
+(#include <stdlib.h>) s
+5 386 M
+(#include <stdint.h>) s
+5 378 M
+(#include <string.h>) s
+5 370 M
+(#include <stdio.h>) s
+5 354 M
+(#include <thread.h>) s
+5 346 M
+(#include <mutex.h>) s
+5 338 M
+(#include <cond.h>) s
+5 330 M
+(#include <thr_lib_helper.h>) s
+5 322 M
+(#include <thr_internals.h>) s
+5 314 M
+(#include <arraytcb.h>) s
+5 306 M
+(#include <hashtable.h>) s
+5 290 M
+(/** @brief The initial size of arraytcb */) s
+5 282 M
+(#define INIT_THR_NUM 32) s
+5 266 M
+(/** @brief The size of hash table to stroe exit status */) s
+5 258 M
+(#define EXIT_HASH_SIZE 1021) s
+5 242 M
+(/** @brief The size of page_remove_info array */) s
+5 234 M
+(#define PAGE_REMOVE_INFO_SIZE 6 ) s
+5 218 M
+(/** @brief It is an array for any threads to store which pages to remove ) s
+5 210 M
+( *         when they invoke thr_exit\(\). More info please refer to ) s
+5 202 M
+( *         thr_lib_helper.c get_pages_to_remove\(\). */) s
+5 194 M
+(static int page_remove_info[PAGE_REMOVE_INFO_SIZE];) s
+5 178 M
+(/** @brief The amount of stack space available for each thread */) s
+5 170 M
+(static unsigned int stack_size;) s
+5 154 M
+(/** @brief Number of threads created */) s
+5 146 M
+(static unsigned int thread_count;) s
+5 130 M
+(/** @brief Mutex to guard when calculating new stack positions */) s
+5 122 M
+(static mutex_t mutex_thread_count;) s
+5 106 M
+(/** @brief Mutex to protect arraytcb */) s
+5 98 M
+(static mutex_t mutex_arraytcb;) s
+5 82 M
+(/** @brief Hash table to store exit status of exiting thread */) s
+5 74 M
+(static hashtable_t hash_exit;) s
+5 58 M
+(/** @brief Initialize the thread library) s
+5 50 M
+( *) s
+5 42 M
+( *  @param size The amount of stack space which will be available for each ) s
+5 34 M
+( *              thread using the thread library) s
+5 26 M
+( *  @return On success return zero, on error return a negative number) s
+5 18 M
+( */) s
+5 10 M
+(int thr_init\(unsigned int size\) {) s
+5 2 M
+(    // From single thread program transfrom to multi-thread program, ) s
+377 490 M
+(    // change the return address or main\(\).) s
+377 482 M
+(    set_rootthr_retaddr\(\);) s
+377 466 M
+(    stack_size = size;) s
+377 450 M
+(    // At first, already has a master thread) s
+377 442 M
+(    thread_count = 1;) s
+377 426 M
+(    int is_error = 0;) s
+377 410 M
+(    is_error |= mutex_init\(&mutex_thread_count\);) s
+377 394 M
+(    is_error |= mutex_init\(&mutex_arraytcb\);) s
+377 378 M
+(    is_error |= arraytcb_init\(INIT_THR_NUM\);) s
+377 362 M
+(    is_error |= thr_lib_helper_init\(stack_size\);) s
+377 346 M
+(    is_error |= thr_hashtableexit_init\(\);) s
+377 330 M
+(    // insert master thread to arraytcb) s
+377 322 M
+(    is_error |= arraytcb_insert_thread\(0, &mutex_arraytcb\);) s
+377 314 M
+(    // set ktid for master thread) s
+377 306 M
+(    is_error |= arraytcb_set_ktid\(0, gettid\(\)\);) s
+377 290 M
+(    return is_error ? -1 : 0;) s
+377 282 M
+(}) s
+377 266 M
+(/** @brief Creates a new thread to run func\(args\)) s
+377 258 M
+( *  ) s
+377 250 M
+( *  This function will create a thread \(a register set and a stack\) to) s
+377 242 M
+( *  run func\(args\). ) s
+377 234 M
+( *) s
+377 226 M
+( *  @param func The address of function for new thread to run) s
+377 218 M
+( *  @param args The argument that passed to the function ) s
+377 210 M
+( *              for new thread to run  ) s
+377 202 M
+( *  @return On success the thread ID of the new thread is returned, on error) s
+377 194 M
+( *          a negative number is returned) s
+377 186 M
+( */) s
+377 178 M
+(int thr_create\(void *\(*func\)\(void *\), void *args\) {) s
+377 170 M
+(    // calculate thread id) s
+377 162 M
+(    mutex_lock\(&mutex_thread_count\);) s
+377 154 M
+(    int tid = thread_count++;) s
+377 146 M
+(    mutex_unlock\(&mutex_thread_count\);) s
+377 130 M
+(    uint32_t stack_addr = 0;) s
+377 122 M
+(    ) s
+377 114 M
+(    int index = arraytcb_insert_thread\(tid, &mutex_arraytcb\);) s
+377 106 M
+(    if\(index == -1\) return -1;) s
+377 90 M
+(    // allocate a stack with stack_size for new thread) s
+377 82 M
+(    if \(\(stack_addr = \(uint32_t\)get_new_stack_top\(index\)\) ) s
+377 74 M
+(            % ALIGNMENT != 0\){) s
+377 66 M
+(        // return value can not be divided by ALIGNMENT, it is an error ) s
+377 58 M
+(        return -1;) s
+377 50 M
+(    }) s
+377 34 M
+(    // "push" argument to new stack  ) s
+377 26 M
+(    memcpy\(\(void*\)\(stack_addr-4\), &args, 4\);) s
+377 10 M
+(    // "push" ktid to new stack --> will do in thr_create_kernel\(\)) s
+_R
+S
+%%Page: (2) 29
+%%BeginPageSetup
+_S
+90 rotate
+24 -574 translate
+/pagenum 2 def
+/fname (./user/libthread/thr_lib.c) def
+/fdir (./user/libthread) def
+/ftail (thr_lib.c) def
+% User defined strings:
+/pagenumstr (2) def
+/moddatestr (02/19/16) def
+/modtimestr (18:46:25) def
+/user_header_p false def
+/user_footer_p false def
+%%EndPageSetup
+column_lines
+do_header
+5 490 M
+(    // "push" stack index to new stack  ) s
+5 482 M
+(    memcpy\(\(void*\)\(stack_addr-12\), &index, 4\);) s
+5 466 M
+(    // create a new thread, tell it where it should start running \(eip\), and) s
+5 458 M
+(    // its stack address \(esp\)) s
+5 450 M
+(    int child_ktid;) s
+5 442 M
+(    if \(\(child_ktid = thr_create_kernel\(func, \(void*\)\(stack_addr-12\)\)\) < 0\) {) s
+5 434 M
+(        // thread_fork error) s
+5 426 M
+(        return -1;) s
+5 418 M
+(    }) s
+5 402 M
+(    /* Set ktid for newly created thread. arraytcb_set_ktid\(\) will be called ) s
+5 394 M
+(     * twice, one in thr_create\(\) which is here and one in thr_create_kernel\(\) ) s
+5 386 M
+(     * to make sure ktid is set for the new thread before any thread need the ) s
+5 378 M
+(     * info. When set ktid here, it must check if the stack belongs to the new ) s
+5 370 M
+(     * thread when the code is executing because the newly created thread may ) s
+5 362 M
+(     * already died and another thread is using the stack.) s
+5 354 M
+(     */) s
+5 346 M
+(    mutex_lock\(&mutex_arraytcb\);) s
+5 338 M
+(    tcb_t *thr = arraytcb_get_thread\(index\);) s
+5 330 M
+(    if \(thr && thr->tid == tid\)) s
+5 322 M
+(        arraytcb_set_ktid\(index, child_ktid\);) s
+5 314 M
+(    mutex_unlock\(&mutex_arraytcb\);) s
+5 298 M
+(    return tid;) s
+5 290 M
+(}) s
+5 274 M
+(/** @brief Join and clean up a thread) s
+5 266 M
+( *  ) s
+5 258 M
+( *  This function joins a thread, if the thread is running, block) s
+5 250 M
+( *  and wait for it; else, look up its return status in the exit ) s
+5 242 M
+( *  hashtable and clean up the hashtable entry.) s
+5 234 M
+( * ) s
+5 226 M
+( *  @param tid The thread id \(assigned by our thread lib\) to join on) s
+5 218 M
+( *  @param statusp The place to store return status of the thread to join ) s
+5 210 M
+( *) s
+5 202 M
+( *  @return 0 on success; -1 on error) s
+5 194 M
+( *) s
+5 186 M
+( */) s
+5 178 M
+(int thr_join\(int tid, void **statusp\) {) s
+5 170 M
+(    // check if tid has been created ) s
+5 162 M
+(    mutex_lock\(&mutex_thread_count\);) s
+5 154 M
+(    if \(tid >= thread_count\){) s
+5 146 M
+(        mutex_unlock\(&mutex_thread_count\);) s
+5 138 M
+(        return -1;) s
+5 130 M
+(    }) s
+5 122 M
+(    mutex_unlock\(&mutex_thread_count\);) s
+5 106 M
+(    // try to find the tcb) s
+5 98 M
+(    mutex_lock\(&mutex_arraytcb\);) s
+5 90 M
+(    tcb_t* thr = arraytcb_find_thread\(tid\);) s
+5 82 M
+(    if \(thr\) {) s
+5 74 M
+(        // tid can be found in arraytcb, it is still running) s
+5 66 M
+(        switch\(thr->state\){) s
+5 58 M
+(        case JOINED:) s
+5 50 M
+(            // tid has been joined by other thread) s
+5 42 M
+(            mutex_unlock\(&mutex_arraytcb\);) s
+5 34 M
+(            return -1;) s
+5 26 M
+(        case RUNNING:) s
+5 18 M
+(            // tid is still running, block and waiting for it) s
+5 10 M
+(            thr->state = JOINED;) s
+5 2 M
+(            cond_wait\(&thr->cond_var, &mutex_arraytcb\);) s
+377 490 M
+(            break;) s
+377 482 M
+(        default:) s
+377 474 M
+(            // tcb state error) s
+377 466 M
+(            return -1;;) s
+377 458 M
+(        } ) s
+377 450 M
+(    }) s
+377 434 M
+(    // thread of tid has exitted) s
+377 426 M
+(    mutex_unlock\(&mutex_arraytcb\);) s
+377 410 M
+(    // try to find exit status of tid in hash table) s
+377 402 M
+(    int is_find;) s
+377 394 M
+(    if \(statusp\)) s
+377 386 M
+(        *statusp = hashtable_remove\(&hash_exit, \(void*\)tid, &is_find\);) s
+377 378 M
+(    else) s
+377 370 M
+(        hashtable_remove\(&hash_exit, \(void*\)tid, &is_find\);) s
+377 354 M
+(    if \(is_find\) {) s
+377 346 M
+(        return 0;) s
+377 338 M
+(    } else {) s
+377 330 M
+(        // Can not find exit status of tid in hash table, might already been ) s
+377 322 M
+(        // reaped by other thread) s
+377 314 M
+(        return -1;) s
+377 306 M
+(    }) s
+377 298 M
+(   ) s
+377 290 M
+(}) s
+377 274 M
+(/** @brief Exits the thread with exit status) s
+377 266 M
+( *  ) s
+377 258 M
+( *  Report exit status in exit hashtable, delete the its tcb, ) s
+377 250 M
+( *  release its stack space and call vanish\(\).) s
+377 242 M
+( * ) s
+377 234 M
+( *  @param status The return status) s
+377 226 M
+( *) s
+377 218 M
+( *  @return void) s
+377 210 M
+( *) s
+377 202 M
+( */) s
+377 194 M
+(void thr_exit\(void *status\) {) s
+377 186 M
+(    // Get stack position index of the current thread) s
+377 178 M
+(    int index = get_stack_position_index\(\);) s
+377 162 M
+(    // get my tcb) s
+377 154 M
+(    tcb_t *thr = arraytcb_get_thread\(index\);) s
+377 146 M
+(    if\(thr == NULL\) {) s
+377 138 M
+(        // Something's wrong) s
+377 130 M
+(        panic\("thr_exit\(\) failed, can not find tcb, something's wrong"\);) s
+377 122 M
+(    }) s
+377 106 M
+(    // if the exiting thread is master thread, also set task exit status) s
+377 98 M
+(    if \(thr->tid == 0\) {) s
+377 90 M
+(        set_status\(\(int\)status\);) s
+377 82 M
+(    }) s
+377 74 M
+(    ) s
+377 66 M
+(    // put exit status to hash table for future reaping) s
+377 58 M
+(    hashtable_put\(&hash_exit, \(void*\)\(thr->tid\), status\);) s
+377 42 M
+(    mutex_lock\(&mutex_arraytcb\);) s
+377 26 M
+(    // check if some threads has called join on it) s
+377 18 M
+(    if\(thr->state == JOINED\) {) s
+377 10 M
+(        // Signal the thread who called join) s
+377 2 M
+(        cond_signal\(&thr->cond_var\);) s
+_R
+S
+%%Page: (3) 30
+%%BeginPageSetup
+_S
+90 rotate
+24 -574 translate
+/pagenum 3 def
+/fname (./user/libthread/thr_lib.c) def
+/fdir (./user/libthread) def
+/ftail (thr_lib.c) def
+% User defined strings:
+/pagenumstr (3) def
+/moddatestr (02/19/16) def
+/modtimestr (18:46:25) def
+/user_header_p false def
+/user_footer_p false def
+%%EndPageSetup
+column_lines
+do_header
+5 490 M
+(    } ) s
+5 474 M
+(    // release resource) s
+5 466 M
+(    if\(arraytcb_delete_thread\(index\) < 0\) {) s
+5 458 M
+(        panic\("thr_exit\(\) failed, can not delete tcb of %d", thr->tid\);) s
+5 450 M
+(    }) s
+5 426 M
+(    /* The following code is executing ) s
+5 418 M
+(     *      mutex_unlock\(&mutex_arraytcb\);) s
+5 410 M
+(     *      remove_page\(\);) s
+5 402 M
+(     *      vanish\(\);) s
+5 394 M
+(     * However, instead of calling these fucntions directly, ) s
+5 386 M
+(     * the program will call them "manually" with assembly to avoid) s
+5 378 M
+(     * using stack after mutex is unlocked. Because after mutex is ) s
+5 370 M
+(     * unlocked, other threads may try to use the stack of the exitting thread) s
+5 362 M
+(     * immediately. Also remove_page\(\) will be called before vanish\(\) so) s
+5 354 M
+(     * stack will become unavailable when calling vanish\(\).) s
+5 346 M
+(     */) s
+5 330 M
+(    // call mutex_unlock\(mutex_arraytcb\) "manually" to avoid "unlocking") s
+5 322 M
+(    SPINLOCK_LOCK\(&mutex_arraytcb.inner_lock\);) s
+5 306 M
+(    node_t *tmpnode = dequeue\(&mutex_arraytcb.deque\);) s
+5 290 M
+(    if \(!tmpnode\) {) s
+5 282 M
+(        mutex_arraytcb.lock_available = 1;) s
+5 274 M
+(    } else {) s
+5 266 M
+(        tmpnode->reject = 1;) s
+5 258 M
+(    }) s
+5 242 M
+(    get_pages_to_remove\(index, page_remove_info\);) s
+5 226 M
+(    // will call SPINLOCK_UNLOCK\(&mutex_arraytcb->inner_lock\), remove_page\(\) abd) s
+5 218 M
+(    //  vanish\(\) in asm_thr_exit\(\) to avoid using stack) s
+5 210 M
+(    asm_thr_exit\(&mutex_arraytcb.inner_lock, page_remove_info\);) s
+5 194 M
+(    panic\("reach a place in thr_exit\(\) that should never be reached"\);) s
+5 186 M
+(    return;) s
+5 170 M
+(}) s
+5 154 M
+(/** @brief Get calling thread's thread id assigned by the thread lib) s
+5 146 M
+( *  ) s
+5 138 M
+( *  Look up tid in arraytcb) s
+5 130 M
+( *) s
+5 122 M
+( *  @return tid on success; -1 on error) s
+5 114 M
+( *) s
+5 106 M
+( */) s
+5 98 M
+(int thr_getid\(\) {) s
+5 90 M
+(    // Get stack position index of the current thread) s
+5 82 M
+(    int index = get_stack_position_index\(\);) s
+5 66 M
+(    // get my tcb) s
+5 58 M
+(    tcb_t *thr = arraytcb_get_thread\(index\);) s
+5 50 M
+(    if\(thr == NULL\) {) s
+5 42 M
+(        // can not find my tcb, something wrong...) s
+5 34 M
+(        return -1;) s
+5 26 M
+(    }) s
+5 10 M
+(    return thr->tid;) s
+5 2 M
+(}) s
+377 482 M
+(/** @brief Get calling thread's thread id assigned by the kernel) s
+377 474 M
+( *  ) s
+377 466 M
+( *  Look up ktid in arraytcb) s
+377 458 M
+( *) s
+377 450 M
+( *  @return ktid on success; -1 on error) s
+377 442 M
+( *) s
+377 434 M
+( */) s
+377 426 M
+(int thr_getktid\(\) {) s
+377 418 M
+(    // Get stack position index of the current thread) s
+377 410 M
+(    int index = get_stack_position_index\(\);) s
+377 394 M
+(    // get my tcb) s
+377 386 M
+(    tcb_t *thr = arraytcb_get_thread\(index\);) s
+377 378 M
+(    if\(thr == NULL\) {) s
+377 370 M
+(        // can not find my tcb, something wrong...) s
+377 362 M
+(        return -1;) s
+377 354 M
+(    }) s
+377 338 M
+(    return thr->ktid;) s
+377 330 M
+(}) s
+377 314 M
+(/** @brief Defers execution of the invoking thread) s
+377 306 M
+( *) s
+377 298 M
+( *  Yield in favor of tid. If tid is -1, then yield to some unspecified thread) s
+377 290 M
+( *) s
+377 282 M
+( *  @param tid Thread id \(assigned by thread lib\) of the thread to yield to.) s
+377 274 M
+( *  @return 0 on success; -1 on error) s
+377 266 M
+( *) s
+377 258 M
+( */) s
+377 250 M
+(int thr_yield\(int tid\) {) s
+377 242 M
+(    if \(tid == -1\)) s
+377 234 M
+(        return yield\(-1\);) s
+377 218 M
+(    mutex_lock\(&mutex_arraytcb\);) s
+377 210 M
+(    tcb_t *thr = arraytcb_find_thread\(tid\);) s
+377 202 M
+(    ) s
+377 194 M
+(    if \(!thr\){) s
+377 186 M
+(        // tid doesn't exist) s
+377 178 M
+(        mutex_unlock\(&mutex_arraytcb\);) s
+377 170 M
+(        return -1;) s
+377 162 M
+(    }) s
+377 146 M
+(    int ktid = thr->ktid;) s
+377 138 M
+(    mutex_unlock\(&mutex_arraytcb\);) s
+377 122 M
+(    return yield\(ktid\);) s
+377 106 M
+(}) s
+377 90 M
+(/** @brief Initialize exit_status hash table) s
+377 82 M
+( *  ) s
+377 74 M
+( *  First set hash table size and hash function.) s
+377 66 M
+( *  Then invoke hashtable_init\(\) API to do initialization.) s
+377 58 M
+( *) s
+377 50 M
+( *  @return On success return 0, on error return a negative number) s
+377 42 M
+( */) s
+377 34 M
+(int thr_hashtableexit_init\(\) {) s
+377 26 M
+(    hash_exit.size = EXIT_HASH_SIZE;) s
+377 18 M
+(    hash_exit.func = thr_exitstatus_hashfunc;) s
+377 10 M
+(    return hashtable_init\(&hash_exit\);) s
+377 2 M
+(}) s
+_R
+S
+%%Page: (4) 31
+%%BeginPageSetup
+_S
+90 rotate
+24 -574 translate
+/pagenum 4 def
+/fname (./user/libthread/thr_lib.c) def
+/fdir (./user/libthread) def
+/ftail (thr_lib.c) def
+% User defined strings:
+/pagenumstr (4) def
+/moddatestr (02/19/16) def
+/modtimestr (18:46:25) def
+/user_header_p false def
+/user_footer_p false def
+%%EndPageSetup
+column_lines
+do_header
+5 482 M
+(/** @brief The hash function for exit_status hash table) s
+5 474 M
+( *  ) s
+5 466 M
+( *  Exit_status hash table takes tid as key and exit status as value. So this ) s
+5 458 M
+( *  hash function simply uses modular to do hashing. Note that this hash ) s
+5 450 M
+( *  function is specific for exit_status hash table.) s
+5 442 M
+( *  ) s
+5 434 M
+( *  @param key The key to calculate index of exit_status hash table) s
+5 426 M
+( * ) s
+5 418 M
+( *  @return The index of exit_status hash table ) s
+5 410 M
+( */) s
+5 402 M
+(int thr_exitstatus_hashfunc\(void *key\) {) s
+5 394 M
+(    int tid = \(int\)key;) s
+5 386 M
+(    return tid % EXIT_HASH_SIZE;) s
+5 378 M
+(}) s
+_R
+S
+%%Page: (1) 32
+%%BeginPageSetup
+_S
+90 rotate
+24 -574 translate
+/pagenum 1 def
+/fname (./user/libthread/thr_lib_helper.c) def
+/fdir (./user/libthread) def
+/ftail (thr_lib_helper.c) def
+% User defined strings:
+/pagenumstr (1) def
+/moddatestr (02/19/16) def
+/modtimestr (18:46:25) def
+/user_header_p false def
+/user_footer_p false def
+%%EndPageSetup
+column_lines
+do_header
+5 490 M
+(/** @file thr_lib_helper.c) s
+5 482 M
+( *) s
+5 474 M
+( *  @brief A helper for thread library that contains functions ) s
+5 466 M
+( *  that do stack space management.) s
+5 458 M
+( *  ) s
+5 450 M
+( *  @author Jian Wang \(jianwan3\)) s
+5 442 M
+( *  @author Ke Wu \(kewu\)) s
+5 434 M
+( *  @bug No known bugs) s
+5 426 M
+( */) s
+5 418 M
+(#include <stdint.h>) s
+5 410 M
+(#include <thr_lib_helper.h>) s
+5 402 M
+(#include <arraytcb.h>) s
+5 394 M
+(#include <string.h>) s
+5 386 M
+(#include <thr_internals.h>) s
+5 370 M
+(/**) s
+5 362 M
+( * @brief Root thread stack low) s
+5 354 M
+( */) s
+5 346 M
+(static uint32_t root_thread_stack_low;) s
+5 330 M
+(/**) s
+5 322 M
+( * @brief Root thread stack high) s
+5 314 M
+( */) s
+5 306 M
+(static uint32_t root_thread_stack_high;) s
+5 290 M
+(/** @brief The max amount of stack space available for each thread */) s
+5 282 M
+(static unsigned int stack_size;) s
+5 266 M
+(/** @brief The %ebp value of the _main\(\) function stack frame, this value is) s
+5 258 M
+( *         set by install_autostack\(\) of autostack.c before program is running*/) s
+5 250 M
+(extern void *ebp__main;) s
+5 226 M
+(/** @brief Initialize thr_lib_helper.) s
+5 218 M
+( *) s
+5 210 M
+( *  Set stack size limit for each thread except for root thread \(which may) s
+5 202 M
+( *  have a chance to grow because of the autostack function\) and get root ) s
+5 194 M
+( *  thread stack high \(which is deterministic at the moment kernel handed) s
+5 186 M
+( *  control to the thread library\). Root thread stack low is not determined) s
+5 178 M
+( *  at this point so that we will wait until we create a first thread.) s
+5 170 M
+( *) s
+5 162 M
+( */) s
+5 154 M
+(int thr_lib_helper_init\(unsigned int size\) {) s
+5 138 M
+(    stack_size = size;) s
+5 122 M
+(    root_thread_stack_high = get_root_thread_stack_high\(\);) s
+5 106 M
+(    return 0;) s
+5 98 M
+(}) s
+5 82 M
+(/** @brief Get stack top for a new thread) s
+5 74 M
+( *  ) s
+5 66 M
+( *  Compute the stack region for a new thread, allocate new pages for its) s
+5 58 M
+( *  stack, and return a stack top that meets alignment requirement. To achieve) s
+5 50 M
+( *  maximum concurrency, multiple threads can call thr_create at the ) s
+5 42 M
+( *  same time, so that there's no guarantee that ajacent stack spaces are) s
+5 34 M
+( *  allocated in any order, each thread will not assume stack space upper) s
+5 26 M
+( *  or lower than its stack are allocated or not.) s
+5 18 M
+( *) s
+5 10 M
+( *  @param index The index of thread stacks \(0 based\)) s
+5 2 M
+( *) s
+377 490 M
+( *  @return Stack top for a new thread on success; -1 on error) s
+377 482 M
+( *) s
+377 474 M
+( */) s
+377 466 M
+(uint32_t get_new_stack_top\(int index\) {) s
+377 450 M
+(    // When the first new thread is to be created, fixate the root thread ) s
+377 442 M
+(    // stack low) s
+377 434 M
+(    if\(index == 1\) {) s
+377 426 M
+(        if\(root_thread_stack_low == 0\) {) s
+377 418 M
+(            root_thread_stack_low = get_root_thread_stack_low\(\);) s
+377 410 M
+(            if\(root_thread_stack_low % ALIGNMENT\) {) s
+377 402 M
+(                return ERROR_MISALIGNMENT;) s
+377 394 M
+(            }) s
+377 386 M
+(        }) s
+377 378 M
+(    }) s
+377 362 M
+(    // Allocate stack space for new threads) s
+377 346 M
+(    // Stack space allocated for root thread will be preserved until task ) s
+377 338 M
+(    // vanishes, since it's allocated by kernel and it may be the result) s
+377 330 M
+(    // of one or more new_pages\(\) call, so that without this information) s
+377 322 M
+(    // it would be hard to call remove_pages\(\) correctly. Future thread) s
+377 314 M
+(    // that is put on the highest stack already has space allocated.) s
+377 306 M
+(    if\(index == 0\) {) s
+377 298 M
+(        return root_thread_stack_low;) s
+377 290 M
+(    }) s
+377 274 M
+(    uint32_t new_thread_stack_low = root_thread_stack_low - ) s
+377 266 M
+(        index * stack_size;) s
+377 258 M
+(    uint32_t new_thread_stack_high = new_thread_stack_low + ) s
+377 250 M
+(        stack_size - 1;) s
+377 234 M
+(    // The page address where new thread stack low is in) s
+377 226 M
+(    uint32_t new_thread_stack_low_page = new_thread_stack_low &) s
+377 218 M
+(        PAGE_ALIGN_MASK;) s
+377 202 M
+(    // The page address where new thread stack high is in) s
+377 194 M
+(    uint32_t new_thread_stack_high_page = new_thread_stack_high &) s
+377 186 M
+(        PAGE_ALIGN_MASK;) s
+377 170 M
+(    // # of pages between where stack high is in and where stack low is in.) s
+377 162 M
+(    // Note this doesn't include the highest page of the new thread stack) s
+377 154 M
+(    int num_pages = \(new_thread_stack_high_page - ) s
+377 146 M
+(            new_thread_stack_low_page\)/PAGE_SIZE;) s
+377 130 M
+(    // When trying to allocate stack space, consider the new thread stack ) s
+377 122 M
+(    // space in 3 parts, the highest page that may overlap with upper stack, ) s
+377 114 M
+(    // the middle pages that are private to itself, and the lowest page that ) s
+377 106 M
+(    // may overlap with lower stack.) s
+377 90 M
+(    // Allocate highest page of this stack region, fail is normal since this ) s
+377 82 M
+(    // page may have been already been allocated ) s
+377 74 M
+(    int ret = new_pages\(\(void *\)\(new_thread_stack_high & PAGE_ALIGN_MASK\), ) s
+377 66 M
+(            PAGE_SIZE\);) s
+377 58 M
+(    if\(ret && ret != ERROR_NEW_PAGES_OVERLAP_EXISTING_REGION\) {) s
+377 50 M
+(        return ret;) s
+377 42 M
+(    } ) s
+377 26 M
+(    // Allocate middle pages of this stack region, shouldn't fail since ) s
+377 18 M
+(    // middle pages don't overlap with other threads' stack regions) s
+377 10 M
+(    if\(num_pages > 1\) {) s
+377 2 M
+(        ret = new_pages\(\(void *\)\(\(new_thread_stack_low & PAGE_ALIGN_MASK\)) s
+_R
+S
+%%Page: (2) 33
+%%BeginPageSetup
+_S
+90 rotate
+24 -574 translate
+/pagenum 2 def
+/fname (./user/libthread/thr_lib_helper.c) def
+/fdir (./user/libthread) def
+/ftail (thr_lib_helper.c) def
+% User defined strings:
+/pagenumstr (2) def
+/moddatestr (02/19/16) def
+/modtimestr (18:46:25) def
+/user_header_p false def
+/user_footer_p false def
+%%EndPageSetup
+column_lines
+do_header
+5 490 M
+(                    + PAGE_SIZE\),  \(num_pages - 1\) * PAGE_SIZE\);) s
+5 482 M
+(        if\(ret\) {) s
+5 474 M
+(            return ret;) s
+5 466 M
+(        }    ) s
+5 458 M
+(    }) s
+5 442 M
+(    // Allocate lowest page, fail is normal since the page may have already ) s
+5 434 M
+(    // been allocated.) s
+5 426 M
+(    if\(\(new_thread_stack_low & PAGE_ALIGN_MASK\) != ) s
+5 418 M
+(            \(new_thread_stack_high & PAGE_ALIGN_MASK\)\) {) s
+5 410 M
+(        ret = new_pages\(\(void *\)\(new_thread_stack_low & PAGE_ALIGN_MASK\),) s
+5 402 M
+(                PAGE_SIZE\);) s
+5 394 M
+(        if\(ret && ret != ERROR_NEW_PAGES_OVERLAP_EXISTING_REGION\) {) s
+5 386 M
+(            return ret;) s
+5 378 M
+(        } ) s
+5 370 M
+(    }) s
+5 354 M
+(    // The 1st available new stack position is last thread's stack low - 1) s
+5 346 M
+(    // Keep decrementing until it aligns with 4) s
+5 338 M
+(    uint32_t new_stack_top = new_thread_stack_high; ) s
+5 330 M
+(    while\(new_stack_top % ALIGNMENT != 0\) {) s
+5 322 M
+(        new_stack_top--;) s
+5 314 M
+(    }) s
+5 298 M
+(    return new_stack_top;) s
+5 290 M
+(}) s
+5 274 M
+(/** @brief Get the information about pages to remove in a thread's stack space) s
+5 266 M
+( *  ) s
+5 258 M
+( *  For each stack space, at the time we allocate it, we divide the stack) s
+5 250 M
+( *  space into 3 parts, so that when we need to remove it, we also need to ) s
+5 242 M
+( *  consider 3 parts separately. The general idea is not to remove a page) s
+5 234 M
+( *  if any other thread is use it.) s
+5 226 M
+( *) s
+5 218 M
+( *  @param index The index of thread stacks \(0 based\)) s
+5 210 M
+( *) s
+5 202 M
+( *  @param page_remove_info An array that information about which pages to ) s
+5 194 M
+( *  remove.) s
+5 186 M
+( *) s
+5 178 M
+( *  @return 0 on success; -1 on error.) s
+5 170 M
+( *) s
+5 162 M
+( */) s
+5 154 M
+(uint32_t get_pages_to_remove\(int index, int *page_remove_info\) {) s
+5 138 M
+(    if\(index == 0\) {) s
+5 130 M
+(        page_remove_info[HIGHEST_PAGE_CAN_REMOVE] = 0;) s
+5 122 M
+(        page_remove_info[MIDDLE_PAGES_CAN_REMOVE] = 0;) s
+5 114 M
+(        page_remove_info[LOWEST_PAGE_CAN_REMOVE] = 0;) s
+5 106 M
+(        return 0;) s
+5 98 M
+(    }) s
+5 82 M
+(    uint32_t new_thread_stack_low = root_thread_stack_low - ) s
+5 74 M
+(        index * stack_size;) s
+5 66 M
+(    uint32_t new_thread_stack_high = new_thread_stack_low + ) s
+5 58 M
+(        stack_size - 1;) s
+5 42 M
+(    tcb_t *thr;) s
+5 26 M
+(    // The page address where new_thread_stack_high is in) s
+5 18 M
+(    uint32_t new_thread_stack_high_page = new_thread_stack_high ) s
+5 10 M
+(        & PAGE_ALIGN_MASK;) s
+5 2 M
+(    uint32_t new_thread_stack_low_page = new_thread_stack_low & ) s
+377 490 M
+(        PAGE_ALIGN_MASK;) s
+377 482 M
+(    uint32_t upper_stack_low = new_thread_stack_high + 1; ) s
+377 474 M
+(    int can_remove = 1;) s
+377 466 M
+(    int i = 1;) s
+377 458 M
+(    while\(\(\(upper_stack_low & PAGE_ALIGN_MASK\) == new_thread_stack_high_page\) ) s
+377 450 M
+(            && \(index -1 != 0\)\) {) s
+377 442 M
+(        if\(!arraytcb_is_valid\(index - i\)\) {) s
+377 434 M
+(            break;) s
+377 426 M
+(        }) s
+377 410 M
+(        thr = arraytcb_get_thread\(index - i\);) s
+377 402 M
+(        if\(thr\) {) s
+377 394 M
+(            // There's thread alive) s
+377 386 M
+(            can_remove = 0;) s
+377 378 M
+(            break;) s
+377 370 M
+(        } ) s
+377 354 M
+(        upper_stack_low += stack_size; ) s
+377 346 M
+(        i++;) s
+377 338 M
+(    } ) s
+377 322 M
+(    if\(can_remove\) {) s
+377 314 M
+(        page_remove_info[HIGHEST_PAGE_BASE] = new_thread_stack_high_page;) s
+377 306 M
+(        page_remove_info[HIGHEST_PAGE_CAN_REMOVE] = 1;) s
+377 298 M
+(    } else {) s
+377 290 M
+(        page_remove_info[HIGHEST_PAGE_CAN_REMOVE] = 0;) s
+377 282 M
+(    }) s
+377 266 M
+(    // # of pages between where stack high is in and where stack low is in.) s
+377 258 M
+(    // Note this doesn't include the highest page of the new thread stack) s
+377 250 M
+(    int num_pages = \(new_thread_stack_high_page - ) s
+377 242 M
+(            new_thread_stack_low_page\)/PAGE_SIZE;) s
+377 226 M
+(    // Middle pages) s
+377 218 M
+(    if\(num_pages > 1\) {) s
+377 210 M
+(        page_remove_info[MIDDLE_PAGES_BASE] = ) s
+377 202 M
+(            new_thread_stack_low_page + PAGE_SIZE;) s
+377 194 M
+(        page_remove_info[MIDDLE_PAGES_CAN_REMOVE] = 1;) s
+377 186 M
+(    } else {) s
+377 178 M
+(        page_remove_info[MIDDLE_PAGES_CAN_REMOVE] = 0;) s
+377 170 M
+(    }) s
+377 154 M
+(    // If lowest page overlaps with lower thread's stack, remove page) s
+377 146 M
+(    // if there's no thread alive in lower stack) s
+377 130 M
+(    // If stack size is smaller than a page, must ensure all threads inside ) s
+377 122 M
+(    // the page are not alive) s
+377 114 M
+(    uint32_t lower_stack_high = new_thread_stack_low - 1;) s
+377 106 M
+(    can_remove = 1;) s
+377 98 M
+(    i = 1;) s
+377 90 M
+(    while\(\(lower_stack_high & PAGE_ALIGN_MASK\) == new_thread_stack_low_page\) {) s
+377 82 M
+(        if\(!arraytcb_is_valid\(index + i\)\) {) s
+377 74 M
+(            break;) s
+377 66 M
+(        }) s
+377 50 M
+(        thr = arraytcb_get_thread\(index + i\);) s
+377 42 M
+(        if\(thr\) {) s
+377 34 M
+(            // There's thread alive) s
+377 26 M
+(            can_remove = 0;) s
+377 18 M
+(            break;) s
+377 10 M
+(        } ) s
+_R
+S
+%%Page: (3) 34
+%%BeginPageSetup
+_S
+90 rotate
+24 -574 translate
+/pagenum 3 def
+/fname (./user/libthread/thr_lib_helper.c) def
+/fdir (./user/libthread) def
+/ftail (thr_lib_helper.c) def
+% User defined strings:
+/pagenumstr (3) def
+/moddatestr (02/19/16) def
+/modtimestr (18:46:25) def
+/user_header_p false def
+/user_footer_p false def
+%%EndPageSetup
+column_lines
+do_header
+5 490 M
+(        lower_stack_high -= stack_size; ) s
+5 482 M
+(        i++;) s
+5 474 M
+(    } ) s
+5 458 M
+(    // Check if highest page overlaps with the lowest page) s
+5 450 M
+(    if\(new_thread_stack_low_page != new_thread_stack_high_page\) {) s
+5 442 M
+(        if\(can_remove\) {) s
+5 434 M
+(            page_remove_info[LOWEST_PAGE_BASE] = new_thread_stack_low_page;) s
+5 426 M
+(            page_remove_info[LOWEST_PAGE_CAN_REMOVE] = 1;) s
+5 418 M
+(        } else {) s
+5 410 M
+(            page_remove_info[LOWEST_PAGE_CAN_REMOVE] = 0;) s
+5 402 M
+(        }) s
+5 394 M
+(    } else {) s
+5 386 M
+(        // Highest page and lowest page are the same page!) s
+5 378 M
+(        // then must ensure all threads within the page are not alive, ) s
+5 370 M
+(        // thus here we combine the information of highest page computed ) s
+5 362 M
+(        // above with the lowest page.) s
+5 354 M
+(        page_remove_info[LOWEST_PAGE_CAN_REMOVE] = 0;) s
+5 338 M
+(        page_remove_info[HIGHEST_PAGE_CAN_REMOVE] &= can_remove;) s
+5 330 M
+(    } ) s
+5 314 M
+(    return 0;) s
+5 306 M
+(}) s
+5 282 M
+(/** @brief Get stack position index of the current thread ) s
+5 274 M
+( *  ) s
+5 266 M
+( *) s
+5 258 M
+( *  @return Stack position index of the current thread) s
+5 250 M
+( */) s
+5 242 M
+(int get_stack_position_index\(\) {) s
+5 226 M
+(    uint32_t esp = asm_get_esp\(\);) s
+5 210 M
+(    if\(esp <= root_thread_stack_high && esp >= root_thread_stack_low\) {) s
+5 202 M
+(        return 0;) s
+5 194 M
+(    } else {) s
+5 186 M
+(        // \(root_thread_stack_low - esp - 1\) so that all esp within a stack ) s
+5 178 M
+(        // region maps to the same number) s
+5 170 M
+(        return 1 + \(root_thread_stack_low - esp - 1\) / stack_size;) s
+5 162 M
+(    }) s
+5 146 M
+(}) s
+5 130 M
+(/** @brief get old %ebp value based on current %ebp) s
+5 122 M
+( *) s
+5 114 M
+( *  @param ebp Value of current %ebp) s
+5 106 M
+( *) s
+5 98 M
+( *  @return Value of old %ebp) s
+5 90 M
+( */) s
+5 82 M
+(void* get_last_ebp\(void* ebp\) {) s
+5 74 M
+(    unsigned long last_ebp = *\(\(unsigned long*\) ebp\);) s
+5 66 M
+(    return \(void*\) last_ebp;) s
+5 58 M
+(}) s
+5 42 M
+(/** @brief Modify the return address of master thread ) s
+5 34 M
+( *  ) s
+5 26 M
+( *  Modify return address of master thread \(return address of main\(\)\) ) s
+5 18 M
+( *  when the program become a multi-thread program. So that when main\(\) return ) s
+5 10 M
+( *  it will go to thr_ret2exit\(\) in thr_create_kernel.S and call thr_exit\(\).) s
+5 2 M
+( *) s
+377 490 M
+( *  This function will use %ebp to trace back until find %ebp of _main\(\). And ) s
+377 482 M
+( *  then modify return address of main\(\).) s
+377 474 M
+( *) s
+377 466 M
+( */) s
+377 458 M
+(void set_rootthr_retaddr\(\) {) s
+377 450 M
+(    // trace back, until find main\(\) and __main\(\)) s
+377 442 M
+(    void* ebp = \(void*\)asm_get_ebp\(\);) s
+377 434 M
+(    void* last_ebp = get_last_ebp\(ebp\);) s
+377 426 M
+(    while \(last_ebp != ebp__main\) {) s
+377 418 M
+(        ebp = last_ebp;) s
+377 410 M
+(        last_ebp = get_last_ebp\(ebp\);) s
+377 402 M
+(    }) s
+377 394 M
+(    // last_ebp is for _main\(\) then ebp is for main\(\), change return address) s
+377 386 M
+(    void *thr_ret2exit_addr = thr_ret2exit;) s
+377 378 M
+(    memcpy\(\(void*\)\(\(uint32_t\)ebp + 4\), &thr_ret2exit_addr, 4\);) s
+377 370 M
+(}) s
+_R
+S
+%%Page: (1) 35
+%%BeginPageSetup
+_S
+90 rotate
+24 -574 translate
+/pagenum 1 def
+/fname (./user/libthread/thr_lib_helper.h) def
+/fdir (./user/libthread) def
+/ftail (thr_lib_helper.h) def
+% User defined strings:
+/pagenumstr (1) def
+/moddatestr (02/19/16) def
+/modtimestr (20:29:42) def
+/user_header_p false def
+/user_footer_p false def
+%%EndPageSetup
+column_lines
+do_header
+5 490 M
+(/** @file thr_lib_helper.h) s
+5 482 M
+( *  @brief Declares types and functions used by thr_lib_helper.c which do ) s
+5 474 M
+( *  stack space management.) s
+5 466 M
+( *  ) s
+5 458 M
+( *  @author Jian Wang \(jianwan3\)) s
+5 450 M
+( *  @author Ke Wu \(kewu\)) s
+5 442 M
+( *) s
+5 434 M
+( *  @bug None known.) s
+5 426 M
+( */) s
+5 410 M
+(#ifndef _THR_LIB_HELPER_H_) s
+5 402 M
+(#define _THR_LIB_HELPER_H_) s
+5 386 M
+(#include <syscall.h>  ) s
+5 378 M
+(#include <simics.h>) s
+5 370 M
+(#include <stdint.h>) s
+5 354 M
+(#include <lib_public.h>) s
+5 338 M
+(/** @brief Index information of the array specifying page remove) s
+5 330 M
+( * information for a thread's stack space.) s
+5 322 M
+( */) s
+5 314 M
+(enum page_remove_info_index_enum {) s
+5 306 M
+(    HIGHEST_PAGE_BASE,) s
+5 298 M
+(    HIGHEST_PAGE_CAN_REMOVE,) s
+5 290 M
+(    MIDDLE_PAGES_BASE,) s
+5 282 M
+(    MIDDLE_PAGES_CAN_REMOVE,) s
+5 274 M
+(    LOWEST_PAGE_BASE,) s
+5 266 M
+(    LOWEST_PAGE_CAN_REMOVE) s
+5 258 M
+(};) s
+5 242 M
+(/** @brief Get current %esp value */) s
+5 234 M
+(uint32_t asm_get_esp\(\);) s
+5 226 M
+(/** @brief Get current %ebp value */) s
+5 210 M
+(uint32_t asm_get_ebp\(\);) s
+5 202 M
+(int thr_lib_helper_init\(unsigned int size\);) s
+5 194 M
+(uint32_t get_pages_to_remove\(int index, int *page_remove_info\);) s
+5 186 M
+(uint32_t get_new_stack_top\(int count\);) s
+5 178 M
+(int get_stack_position_index\(\);) s
+5 170 M
+(void* get_last_ebp\(void* ebp\);) s
+5 162 M
+(void set_rootthr_retaddr\(\);) s
+5 146 M
+(#endif) s
+_R
+S
+%%Trailer
+%%Pages: 35
+%%DocumentNeededResources: font Times-Roman Courier-Bold Courier 
+%%+ font Times-Bold 
+%%EOF
