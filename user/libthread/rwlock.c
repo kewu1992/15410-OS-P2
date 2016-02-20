@@ -62,15 +62,18 @@ void rwlock_lock( rwlock_t *rwlock, int type ) {
         }
 
         rwlock->reader_waiting_count++;
+        // as long as rwlock is not available or some writers are waiting, 
+        // reader should wait
         while (rwlock->lock_state != 0 || rwlock->writer_waiting_count > 0) {
-            // only when there is no writer is waiting can new reader hold the
-            // shared reader lock (favor writer)
+            // only when there is no writer is waiting and rwlock is a reader
+            // lock can the new reader hold the shared reader lock(favor writer)
             if (rwlock->lock_state > 0 && rwlock->writer_waiting_count == 0) 
                 break;
             cond_wait(&rwlock->cond_reader, &rwlock->mutex_inner);
         }
         rwlock->reader_waiting_count--;
 
+        // share the lock with other readers
         rwlock->lock_state++;
 
         mutex_unlock(&rwlock->mutex_inner);
@@ -83,10 +86,12 @@ void rwlock_lock( rwlock_t *rwlock, int type ) {
         }
 
         rwlock->writer_waiting_count++;
+        // as long as rwlock is not available, writer must wait
         while (rwlock->lock_state != 0) 
             cond_wait(&rwlock->cond_writer, &rwlock->mutex_inner);
         rwlock->writer_waiting_count--;
 
+        // mark the lock as writer lock
         rwlock->lock_state = -1;
 
         mutex_unlock(&rwlock->mutex_inner);
@@ -119,15 +124,19 @@ void rwlock_unlock( rwlock_t *rwlock ) {
         mutex_lock(&rwlock->mutex_inner);
     }
 
+    // for writer lock (lock_state < 0), release rwlock is lock_state++
+    // for reader lock (lock_state > 0). release rwlock is lock_state--
     rwlock->lock_state = (rwlock->lock_state>0) ? 
         (rwlock->lock_state-1) : 
         (rwlock->lock_state+1);
 
+    // if lock_state == 0, it is available for other waiting threads 
     if (rwlock->lock_state == 0) {
-        // if some writers are waiting, get the lock to the writer(favor writer)
+        // if some writers are waiting, give the rwlock to writer(favor writer)
         if (rwlock->writer_waiting_count > 0) 
             cond_signal(&rwlock->cond_writer);
         else
+            // no writer is waiting, all readers can share the lock
             cond_broadcast(&rwlock->cond_reader);
     }
 
@@ -188,7 +197,9 @@ void rwlock_downgrade( rwlock_t *rwlock) {
         panic("readers/writers lock %p cannot be downgraded while not locked",
                 rwlock);
     }
+    // downgrade lock from writer lock to reader lock
     rwlock->lock_state = 1;
+    // other readers may share the rwlock
     cond_broadcast(&rwlock->cond_reader);
     mutex_unlock(&rwlock->mutex_inner);
 }
