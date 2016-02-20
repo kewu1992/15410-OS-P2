@@ -231,11 +231,6 @@ void thr_exit(void *status) {
         // Something's wrong
         panic("thr_exit() failed, can not find tcb, something's wrong");
     }
-
-    // if the exiting thread is master thread, also set task exit status
-    if (thr->tid == 0) {
-        set_status((int)status);
-    }
     
     // put exit status to hash table for future reaping
     hashtable_put(&hash_exit, (void*)(thr->tid), status);
