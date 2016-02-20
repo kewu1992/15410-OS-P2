@@ -5,15 +5,15 @@
 @author Jian Wang (jianwan3)
 @author Ke Wu (kewu)
 
-1. Mutex
+1. Mutex: 
 Mutex is a low level constuct that serves the purpose of mutual exclusion.
 We have devised both a basic spinlock mutex and an advanced mutex that 
 approximates bounded waiting. 
 
-1.1 Spinlock
+1.1 Spinlock: 
 The spinlock mutex is used in basic libraries like malloc and serves as the 
-inner lock of the advanced mutex. It simply tries to acqure a lock for a 
-limited times until it defers trying through yielding. The design 
+inner lock of the advanced mutex. It simply tries to acqure a lock (using xchg) 
+for a limited times until it defers trying through yielding. The design 
 choice related to it is whether to yield immediately if a lock is not 
 available. In a single core machine, if a lock is not available, then it's 
 likely other thread not running is holding the lock, so the current thread 
@@ -23,71 +23,99 @@ time, so it makes sense for the current thread to try acquring for a few times
 instead of yielding immediately. To adapt to work well in a multi-threaded 
 environment, our spinlock tries a few times before it yields.
 
-1.2 Advanced mutex approximating bounded waiting
-The advanced mutex uses a queue to manage threads that want the lock object
+1.2 Advanced mutex approximating bounded waiting: 
+The advanced mutex uses a FIFO queue to manage threads that want the lock object
 and a spinlock as an inner lock to guard against accesses to the queue and 
-the lock object. When a thread tries to acquire a lock and can not make it
+the mutex object. When a thread tries to acquire a mutex lock and can't make it
 because other thread is holding it, it enqueues itself to the waiting queue,
 yields itself and checks for lock availability next time it awakes. When the 
 lock holder thread unlocks the mutex, it deques the first thread in the 
 waiting queue of the lock, and yields the exection to it. The advanced mutex
-achives bounded waiting through the usage of a waiting queue, but it's an
-approximation in the sense that the inner lock it uses to accessing the 
-waiting queue is a spinlock that cannot be avoided.
+achives bounded waiting through the usage of a waiting queue
+and a spinlock. Although spinlock itself doesn't satisfy bounded waitting, 
+the critical section (which is the code of advanced mutex) that protected by 
+spinlock are guaranteed to be short. Becuase only when one thread is in the 
+advanced mutex code need to obtain the spinlock. It is unlikely that there are
+always some threads that hold the spinlock of mutex. So it is better than we use
+spinlock (xchg) as implementation of mutex directly because we can not predict 
+what the critical section mutex is trying to protect. So spinlock help mutex 
+somewhat approximate bounded waiting.
 
-2. Condition variable 
+2. Condition variable: 
 A condition variable is used to wait for an event with efficiency by 
 relinquishing CPU voluntarily to other threads until the event changes 
-signals.In our implementation, it uses a mutex to guard against its accessing 
-to the waiting queue, which contains the threads that are waiting for an event
-to change. There are race conditions involved when threads dechedule to wait 
-for an event and when threads make others runnable to signal an event. The 
-atomicity is achieved through the usage of a flag called reject.
+signals. In our implementation, it uses a mutex to guard against its accessing 
+to the waiting FIFO queue, which contains the threads that are waiting for an 
+event to change. There are race conditions involved when threads dechedule to 
+wait for an event and when threads make others runnable to signal an event. The 
+atomicity is achieved through the usage of a flag called reject and syscall 
+deschedule(reject).
 
-3. Semaphore
+3. Semaphore: 
 A semaphore is implemented with mutex, condition variable, and a counter. 
 The counter gives the idea of how many resources are left. The mutex is used 
 to guard against accessing and modifying counter, while the condition variable
 blocks and signals threads when there's no resources left.
 
-4. Readers/writers locks
+4. Readers/writers locks: 
 
 What approach, how, why.
 Our implementation favors writer locks.
 
-The drawback of this approach may be that readers may be starved, though.
+The drawback of this approach may be that readers may be starved, though. 
 
-Data structures related to thread management:
+To achieve our goal, rwlock uses a variable lock_state to store the state of the
+rwlock (unlocked, shared, exclusive, destroied). It also records how many 
+readers and/or writers are waiting for the rwlock. When a new lock() request 
+comes in, rwlock will decide whether to block the thread based on the lock type
+it requests, the state of the rwlock and how many readers/writers are waiting. 
+Similarly, when a thread unlock(), rwlock will decide who will get the lock next
+based on the info above. To achieve blocking, two conditional variables are
+used for readers and writers. To protect rwlock data structre, a mutex is used.
+
+5. Thread library: 
+
+5.1 Data structures related to thread management: 
 An expandable array called arraytcb is used to manage thread's information.
 Each thread has an associated tcb (thread control block) to manage it. The 
 tcb of a thread contains information like: state (RUNNING, JOINED), ktid 
 (thread id in the kernel side), tid (Thread id used by the thread lib, 
 increamented monotonically with the root thread's tid as 0, the first new 
-thread's tid as 1, the second as 2, etc), and a condition variable for it.
+thread's tid as 1, the second as 2, etc), and a condition variable for it 
+(so that other threads can join on it).
 
 When a thread is created, its personal tcb is created and inserted into the
 arraytcb. Later, the thread's information can be achieved from the arraytcb
-using its index, which is the same as its stack position index.
+using its index, which is the same as its stack position index. Because stack 
+position index of the current thread can be calculated easily (by looking at the
+value of %esp and do some math), it gives an very efficient way to impelement
+thr_getid() and thr_getktid().
 
 A hashtable is used to manage threads's exit status. When a thread exits, 
-either by explicitly calling thr_exit, or returns directly, thr_exit will 
+either by explicitly calling thr_exit(), or returns directly, thr_exit() will 
 be called anyway to delete the tcb of the thread in the arraytcb, put in 
 the hashtable with thread id as key, and return value as value. The stack 
 space of the exiting thread is released immediately by remove_pages() 
-except the pages that other alive threads are sharing. Later, when a thread 
+except the pages that are shared by other alive threads. Later, when a thread 
 joins other thread, it will look up the hashtable to get the exit status of 
 the thread.
 
-Thread stack space management:
+5.2 Stack space: 
+Thread stack space management: 
 Each thread's stack space is ajacent to each other, with the highest stack
 being originally the root thread's stack. Each thread get's an index
 specifying where its stack region is when it's created. The index
 is determined by the current available slots on the stack, which corresponds
 to an available slot in the arraytcb. After the index is assigned, the pages
 of the thread's stack region are allocated and the thread's stack pointer is
-set to the top of its private stack.
+set to the top of its private stack. 
 
-Stack memory management:
+To achieve memory-efficient thr_exit(), the stack space of the exiting thread 
+will be deallcated at the end of thr_exit() so that "zombie thread" will not
+hold onto large amounts of memory. we use a hash table to store the exit
+status of the exiting thread. 
+
+Stack memory management: 
 Stack spaces are allocated through new_pages() syscall each time a new thread
 is created and removed through remove_pages() syscall when it exits. Our
 implementation favors this approach over the one that preserves allocated 
@@ -101,7 +129,7 @@ for a long time and the task will not vanish, thus the previously allocated
 stack space for work threads will be held by this task wastefully, and no
 other tasks can use these spaces until the server or database vanishes.
 
-Autostack for single root thread:
+Autostack for single root thread: 
 Autostack is supported for single-threaded programs. The root thread's stack
 can grow down beyond the orinal limit allocated by the kernel until there's
 not enough memory resources. This function is achieved through the usage of 
@@ -115,29 +143,41 @@ and will not be extended any more. If in the future the root thread uses more
 space than its current max stack size and causes a page fault, the kernel
 will handle it instead of the user exception handler.
 
-Function call failure handling:
+Tricky parts of thr_create() and thr_exit(): 
+When create a new thread and a thread is about to exit, there are some time that
+no stack can be used by the thread. For example, after execute thread_fork, new
+thread can not use the stack of the original thread, and after execute 
+remove_page(), stack region is deallocated. So some code of thr_create() and 
+thr_exit() must wirtten in assembly to avoid using stack. Instead, a limit
+number of registers are used to finish the jobs.
+
+5.3 Function call failure handling: 
 For function calls that have a non-void return type, we report the error to 
 callers. For function calls that have a void return type, 
-For malloc calls, we print a log message and at the same time retry.
-(MORE ON THIS)
+For some situations that it is possible to recover (e.g. malloc calls, lock an
+unlocked mutex) we print a log message, wait a while and retry. Because it is 
+possiable that memory becomes enough for malloc or mutex is locked by other 
+threads. For some situations that it is impossible to recover (e.g. try to use
+a destroied mutex), the program will call panic(). 
 
-Thr_exit for root thread:
-Ideally, root thread should also call thr_exit to get its return status
-collected by other threads join on it, but there's no guarantee the root 
-thread will do so. So our implementation modifies the return address of 
-the root thread's main to achieve this purpose.
+5.4 Thr_exit for root thread: 
+Ideally, root thread of multi-thread program should also call thr_exit() to get
+its return status collected by other threads join on it, but there's no 
+guarantee the root thread will do so. So our implementation modifies the return
+address of the root thread's main in thr_init() to achieve this purpose.
 
-Discussions:
-Buffer zone
+6. Discussions: 
+
+6.1 Buffer zone: 
 In the current implementation, stack spaces of different threads are ajacent
 to each other without a "buffer zone", say, a page that doesn't belong to
 any thread. In other words, there's no protection and warning if a thread 
-accesses stack space that doesn't belong to it and that stack space happenes 
-to have been allocated for another thread. Although, a thread can always 
-access other's stack space if it really wants to by skipping the buffer zone, 
-but the idea of buffer zone gives protection to some extent.
+accesses stack space that doesn't belong to it due to stack autogrwoing and 
+that stack space happenes to have been allocated for another thread. Although, 
+a thread can always access other's stack space if it really wants to by skipping
+the buffer zone, but the idea of buffer zone gives protection to some extent.
 
-Multi-threaded autostack
+6.2 Multi-threaded autostack: 
 The other idea we have considered but not implemented is mutlti-threaded
 autostack. The idea is to allocate exact amout of virtual address space that
 each thread asks for, but at most one page physical space initially for each 
@@ -146,11 +186,11 @@ more. This approach is likely to work well in a running environment with
 limited physical space that needs a lot of threads set with large stack size 
 but don't actually use that many.
 
-TCB with more granularity:
+6.3 TCB with more granularity: 
 One of the goals of the thread library is to achieve high concurrency
 with thread-safety. Currently, many thread lib operations needs to access
 and modify arraytcb, which is a concurrency bottle neck in the sense that the
-the array is guarded by a single mutex. A better approach would be to
+the arraytcb is guarded by a single mutex. A better approach would be to
 have a private mutex for each tcb, which will increase memory usage as a side 
 effect though.
 
