@@ -55,7 +55,7 @@ deschedule(reject).
 A semaphore is implemented with mutex, condition variable, and a counter. 
 The counter gives the idea of how many resources are left. The mutex is used 
 to guard against accessing and modifying counter, while the condition variable
-blocks and signals threads when there's no resources left.
+blocks and signals threads as number of resources fluctuates.
 
 4. Readers/writers locks: 
 
@@ -144,12 +144,15 @@ space than its current max stack size and causes a page fault, the kernel
 will handle it instead of the user exception handler.
 
 Tricky parts of thr_create() and thr_exit(): 
-When create a new thread and a thread is about to exit, there are some time that
-no stack can be used by the thread. For example, after execute thread_fork, new
-thread can not use the stack of the original thread, and after execute 
-remove_page(), stack region is deallocated. So some code of thr_create() and 
-thr_exit() must wirtten in assembly to avoid using stack. Instead, a limit
-number of registers are used to finish the jobs.
+When creating new threads in thr_create(), at the very beginning, a new
+thread's %esp is not moved down to its own stack, it shouldn't use the
+caller's stack, so some of the goals need to be done in registers to
+avoid using stack. Similarly, When thr_exit() is called, the calling thread
+needs to remove pages of its stack space which also means after a point, it 
+cannot use its original stack but it still have some clean up work to do.
+Those works need to be written in Assembly with the help of registers. The
+challenging parts are that there are a limited amount of registers availale,
+(some of them needs to be avoided to preserve program states).
 
 5.3 Function call failure handling: 
 For function calls that have a non-void return type, we report the error to 
@@ -166,7 +169,7 @@ its return status collected by other threads join on it, but there's no
 guarantee the root thread will do so. So our implementation modifies the return
 address of the root thread's main in thr_init() to achieve this purpose.
 
-5.5 efficient way to implement thr_getid() and thr_getktid(): 
+5.5 Efficient way to implement thr_getid() and thr_getktid(): 
 When a thread is created, its personal tcb is created and inserted into the
 arraytcb. Later, the thread's information (e.g. tid, ktid) can be achieved from
 the arraytcb using its index, which is the same as its stack position index. 
@@ -200,7 +203,7 @@ One of the goals of the thread library is to achieve high concurrency
 with thread-safety. Currently, many thread lib operations needs to access
 and modify arraytcb, which is a concurrency bottle neck in the sense that the
 the arraytcb is guarded by a single mutex. Although we try our best to reduce 
-the critical section of arraytcb (e.g. avoid some syscall in critical section), 
+the critical section of arraytcb (e.g. avoid some syscall in critical section),
 it may still cause some threads to wait on the global mutex. A better approach 
 would be to have a private mutex for each tcb, which will increase memory usage
 as a side effect though.
