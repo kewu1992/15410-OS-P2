@@ -5,6 +5,7 @@
  *     1. lock_available: it is an integer to indicate if the mutex lock is
  *        available. lock_available == 1 means available (unlocked), 
  *        lock_available == 0 means unavailable (locked).
+ *        lock_available == -1 means the mutex is destroied
  *     2. inner_lock: a spinlock to protect critical section of mutex code.
  *     3. deque: a double-ended queue to store the threads that are blocking on
  *        the mutex. The queue is FIFO so first blocked thread will get the 
