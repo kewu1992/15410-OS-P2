@@ -63,13 +63,18 @@ Our implementation favors writer locks. The drawback of this approach may be
 that readers may be starved, though. 
 
 To achieve our goal, rwlock uses a variable lock_state to store the state of the
-rwlock (unlocked, shared, exclusive, destroied). It also records how many 
-readers and/or writers are waiting for the rwlock. When a new lock() request 
-comes in, rwlock will decide whether to block the thread based on the lock type
-it requests, the state of the rwlock and how many readers/writers are waiting. 
-Similarly, when a thread unlock(), rwlock will decide who will get the lock next
-based on the info above. To achieve blocking, two conditional variables are
-used for readers and writers. To protect rwlock data structre, a mutex is used.
+rwlock (unlocked, shared, exclusive, destroied). rwlock is shared by multiple 
+readers, lock_state also cotains the info that how many readers are sharing. 
+Rwlock also records how many readers and/or writers are waiting for the rwlock. 
+When a new lock() request comes in, rwlock will decide whether to block the 
+thread based on the lock type it requests, the state of the rwlock and how many
+readers/writers are waiting. Similarly, when a thread unlock(), rwlock will
+decide who will get the lock next based on the info above. To achieve blocking,
+two conditional variables are used for readers and writers. To protect rwlock
+data structre, a mutex is used.
+
+We use mutex/cvar to implement rwlock because it gives us more flexibility to
+design the rwlock.
 
 5. Thread library: 
 
@@ -84,10 +89,7 @@ thread's tid as 1, the second as 2, etc), and a condition variable for it
 
 When a thread is created, its personal tcb is created and inserted into the
 arraytcb. Later, the thread's information can be achieved from the arraytcb
-using its index, which is the same as its stack position index. Because stack 
-position index of the current thread can be calculated easily (by looking at the
-value of %esp and do some math), it gives an very efficient way to impelement
-thr_getid() and thr_getktid().
+using its index, which is the same as its stack position index.
 
 A hashtable is used to manage threads's exit status. When a thread exits, 
 either by explicitly calling thr_exit(), or returns directly, thr_exit() will 
@@ -164,6 +166,15 @@ its return status collected by other threads join on it, but there's no
 guarantee the root thread will do so. So our implementation modifies the return
 address of the root thread's main in thr_init() to achieve this purpose.
 
+5.5 efficient way to implement thr_getid() and thr_getktid(): 
+When a thread is created, its personal tcb is created and inserted into the
+arraytcb. Later, the thread's information (e.g. tid, ktid) can be achieved from
+the arraytcb using its index, which is the same as its stack position index. 
+Because stack position index of the current thread can be calculated easily 
+(by looking at the value of %esp and do some math), it gives an very efficient
+way to impelement thr_getid() and thr_getktid().
+
+
 6. Discussions: 
 
 6.1 Buffer zone: 
@@ -188,9 +199,11 @@ but don't actually use that many.
 One of the goals of the thread library is to achieve high concurrency
 with thread-safety. Currently, many thread lib operations needs to access
 and modify arraytcb, which is a concurrency bottle neck in the sense that the
-the arraytcb is guarded by a single mutex. A better approach would be to
-have a private mutex for each tcb, which will increase memory usage as a side 
-effect though.
+the arraytcb is guarded by a single mutex. Although we try our best to reduce 
+the critical section of arraytcb (e.g. avoid some syscall in critical section), 
+it may still cause some threads to wait on the global mutex. A better approach 
+would be to have a private mutex for each tcb, which will increase memory usage
+as a side effect though.
 
 
 */
