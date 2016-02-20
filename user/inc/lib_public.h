@@ -1,4 +1,4 @@
-/** @file lib_public.c
+/** @file lib_public.h
  *  @brief Declares functions that are public among libraries
  *
  */
@@ -17,10 +17,10 @@
  */
 #define PAGE_ALIGN_MASK ((unsigned int) ~((unsigned int) (PAGE_SIZE-1)))
 
-/** @breif Error code defined by kernel that OS has insufficient resources */
+/** @brief Error code defined by kernel that OS has insufficient resources */
 #define ERROR_NEW_PAGES_INSUFFICIENT_RESOURCE (-1)
 
-/** @breif Error code defined by kernel that any portion of the requested 
+/** @brief Error code defined by kernel that any portion of the requested 
  *  region overlap with existing task address space 
  */
 #define ERROR_NEW_PAGES_OVERLAP_EXISTING_REGION (-2)
@@ -42,11 +42,14 @@
 
 /* Functions in libautostack for other lib to use */
 
+/** @brief Get root thread stack low */
 uint32_t get_root_thread_stack_low();
+/** @brief Get root thread stack high */
 uint32_t get_root_thread_stack_high();
 
 /* Functions in libthread for other lib to use */
 
+/** @brief Initialized malloc lib */
 int malloc_init();
 
 #endif 

@@ -12,22 +12,27 @@
 
 #include <mutex.h>
 
-/** @brief The node strcuture of linked list of hash table. The hash table uses
- *         separate chaining to resolve collision. */
+/** @brief The node strcuture of linked list of hash table
+  * Separate chaining is used to resolve collision. 
+  */
 typedef struct hashnode_s{
+    /** @brief Pointer to next node */
     struct hashnode_s *next;
+    /** @brief Key */
     void *key;
+    /** @brief Value */
     void *value;
 } hashnode_t;
 
-/** @brief The hash table data structure. It contans the size and actual data
- *         of a hash table. It also contains the hash function that is used by
- *         this hash table. There is also a mutex to make sure the hash table is
- *         thread-safe. */
+/** @brief The hash table data structure */
 typedef struct {
+    /** @brief Acutal data of the hashtable */
     hashnode_t *array;
+    /** @brief Size of the hashtable */
     int size;
+    /** @brief The hash function used by this hashtable */
     int (*func)(void *);
+    /** A mutex to ensure thread-safety of this hashtable */
     mutex_t lock;
 } hashtable_t;
 

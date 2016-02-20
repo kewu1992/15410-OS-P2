@@ -10,19 +10,23 @@
 #ifndef _QUEUE_H_
 #define _QUEUE_H_
 
-/** @brief The node strcuture of double-ended queue. ktid and reject are data
- *  data field, next and prev indicate the next and previous node in queue. */
+/** @brief The node strcuture of double-ended queue */
 typedef struct node{
+    /** @brief Data field. The thread id assigned by the kernel */
     int ktid;
+    /** @brief Data field. A boolean flag */
     int reject;
+    /** @brief Pointer to next node */
     struct node *next;
+    /** @brief Pointer to prev node */
     struct node *prev;
 } node_t;
 
-/** @brief The strucure of a double-ended queue. It contains a head node and
- *         a tail node. */
+/** @brief The strucure of a double-ended queue */
 typedef struct deque{
+    /** @brief Head node */
     node_t *head;
+    /** @brief Tail node */
     node_t *tail;
 } deque_t;
 

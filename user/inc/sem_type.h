@@ -9,6 +9,7 @@
 #include <cond.h>
 #include <stddef.h>
 
+/** @brief semaphore type */ 
 typedef struct sem {
     /** @brief A mutux to guard access to changes to cond and count */
     mutex_t mutex;

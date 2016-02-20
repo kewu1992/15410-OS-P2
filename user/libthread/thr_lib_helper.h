@@ -29,13 +29,15 @@ enum page_remove_info_index_enum {
     LOWEST_PAGE_CAN_REMOVE
 };
 
+/** @brief Get current %esp value */
+uint32_t asm_get_esp();
+/** @brief Get current %ebp value */
+
+uint32_t asm_get_ebp();
 int thr_lib_helper_init(unsigned int size);
 uint32_t get_pages_to_remove(int index, int *page_remove_info);
 uint32_t get_new_stack_top(int count);
-uint32_t get_stack_high(int index);
 int get_stack_position_index();
-uint32_t asm_get_esp();
-uint32_t asm_get_ebp();
 void* get_last_ebp(void* ebp);
 void set_rootthr_retaddr();
 

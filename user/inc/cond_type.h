@@ -9,8 +9,14 @@
 #include <queue.h>
 
 
+/** @brief Condition variable type */
 typedef struct cond {
+    /** @brief A mutex to protect critical section of condition varaible code 
+     */
     mutex_t mutex;
+    /** @brief A double-ended queue to place the threads that are blocking on 
+     *  the condition varaible.
+     */
     deque_t deque;
 } cond_t;
 

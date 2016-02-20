@@ -27,7 +27,6 @@
 
 int allocate_pages(uint32_t range_high, uint32_t range_low);
 void swexn_handler(void *arg, ureg_t *ureg);
-uint32_t get_swexn_stack_high();
 void install_autostack(void *stack_high, void *stack_low);
 
 #endif /* _AUTOSTACK_H */

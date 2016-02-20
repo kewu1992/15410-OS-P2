@@ -24,24 +24,8 @@
 #include <mutex.h>
 #include <arraytcb.h>
 
-/** @brief The node type of array->avail_list, it has one data field 'index' to 
- *         indicate which stack 'slot' is available (no be used by any thread)*/
-typedef struct availnode_s {
-    struct availnode_s *next;
-    int index;
-} availnode_t;
-
-/** @brief The data structure of arraytcb. maxsize is the maximum capacity of
- *         arraytcb, cursize is the current capacity of arraytcb. When 
- *         maxsize == cursize, it means there is no room for new thread, 
- *         arraytcb should be doubled. array->data is where the actucal tcb
- *         data stored in. array->avail_list is a linked list that stores all 
- *         avilable (no be used by any thread) stack 'slot'. */
-static struct arraytcb_s {
-    int maxsize, cursize;
-    tcb_t** data;
-    availnode_t *avail_list;
-} *array;
+/** @brief An array to manage tcbs */
+static struct arraytcb_s *array;
 
 /** @brief Initialize arraytcb data structure
  *  

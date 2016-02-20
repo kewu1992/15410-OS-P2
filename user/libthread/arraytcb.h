@@ -29,6 +29,31 @@ typedef struct {
     cond_t cond_var;
 } tcb_t;
 
+/** @brief The data structure of arraytcb */
+struct arraytcb_s {
+    /** @brief The maximum capacity of arraytcb */
+    int maxsize;
+    /** @brief Current capacity of arraytcb 
+     *  When maxsize == cursize, it means there is no room for new thread,
+     *  arraytcb should be doubled.
+     */
+    int cursize;
+    /** @brief Where the actual tcb data is stored */
+    tcb_t** data;
+    /** @brief A linked list that stores all available (not used by any
+     * thread) stack 'slot'
+     */
+    availnode_t *avail_list;
+};
+
+/** @brief The node type of array->avail_list */
+typedef struct availnode_s {
+    /** @brief Pointer to next node */
+    struct availnode_s *next;
+    /** @brief Which stack 'slot' is available (not used by any thread) */
+    int index;
+} availnode_t;
+
 int arraytcb_init(int size);
 
 int arraytcb_insert_thread(int tid, mutex_t *mutex_arraytcb);
