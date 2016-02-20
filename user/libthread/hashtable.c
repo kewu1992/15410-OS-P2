@@ -1,16 +1,15 @@
 /** @file hashtable.c
  *  @brief This file contains implementation of a generic hash table
  *
- *  It implements some common API of a hash table, including init(), 
- *  put(), get(), remove() and delete(). The size of hash table and
+ *  It implements some common APIs of a hash table, including init(), 
+ *  put(), get(), remove() and destroy(). The size of hash table and
  *  hash function are contained in the hashtable_t data structure 
  *  which is self-defined by user and passed to this program. The 
  *  collision resolution for this implementation is separate chaining
  *  with linked lists. This hash table is thread-safe.
  *
- *
- *  @bug array shouldn't always be extended --> watch out malloc error 
- *       (not enough memory, VM/PM)
+ *  @author Ke Wu (kewu)
+ *  @bug No known bug
  */
 
 #include <stdlib.h>
@@ -20,7 +19,7 @@
 
 /** @brief Initialize a hashtable data structure
  *  
- *  @param table The table that need to initialize
+ *  @param table The hash table that need to initialize
  *
  *  @return On success return 0, on error return a negative number      
  */

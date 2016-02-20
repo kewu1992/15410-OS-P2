@@ -3,7 +3,7 @@
  *
  *  cond_t contains the following fields
  *     1. mutex: a mutex to protect critical section of condition varaible code.
- *     3. deque: a double-ended queue to store the threads that are blocking on
+ *     2. deque: a double-ended queue to store the threads that are blocking on
  *        the condition varaible. The queue is FIFO so first blocked thread will
  *        get be signaled first.
  *

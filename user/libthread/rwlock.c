@@ -1,6 +1,22 @@
 /** @file rwlock.c
  *  @brief Contains the implementation of rwlock
  *
+ *  rwlock_t contains the following fields
+ *     1. lock_state: it is used to indicate the state of rwlock. 
+ *        lock_state == 0 means rwlock is available (unlocked).
+ *        lock_state > 0 means some readers are holding the lock (shared), the 
+ *                       value of lock_state indicates how many readers are 
+ *                       holding the lock
+ *        lock_state == -1 means a writer is holding the lock (exclusvie)
+ *        lock_state == -2 means the rwlock is destoried
+ *     2. writer_waiting_count: indicates how many writers are waiting the lock
+ *     3. reader_waiting_count: indicates how many readers are waiting the lock
+ *     4. mutex_inner: a mutex to protect critical section of rwlock code.
+ *     5. cond_reader: conditional variable for readers to block
+ *     6. cond_writer: conditional variable for writers to block
+ *
+ *
+ *
  *  @author Ke Wu (kewu)
  *
  *  @bug No known bugs.
@@ -47,6 +63,8 @@ void rwlock_lock( rwlock_t *rwlock, int type ) {
 
         rwlock->reader_waiting_count++;
         while (rwlock->lock_state != 0 || rwlock->writer_waiting_count > 0) {
+            // only when there is no writer is waiting can new reader hold the
+            // shared reader lock (favor writer)
             if (rwlock->lock_state > 0 && rwlock->writer_waiting_count == 0) 
                 break;
             cond_wait(&rwlock->cond_reader, &rwlock->mutex_inner);
@@ -106,6 +124,7 @@ void rwlock_unlock( rwlock_t *rwlock ) {
         (rwlock->lock_state+1);
 
     if (rwlock->lock_state == 0) {
+        // if some writers are waiting, get the lock to the writer(favor writer)
         if (rwlock->writer_waiting_count > 0) 
             cond_signal(&rwlock->cond_writer);
         else
