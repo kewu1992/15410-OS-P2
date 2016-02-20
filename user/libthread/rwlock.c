@@ -1,3 +1,10 @@
+/** @file rwlock.c
+ *  @brief Contains the implementation of rwlock
+ *
+ *  @author Ke Wu (kewu)
+ *
+ *  @bug No known bugs.
+ */
 #include <rwlock.h>
 #include <mutex.h>
 #include <cond.h>
@@ -5,7 +12,11 @@
 #include <simics.h>
 #include <stdio.h>
 
-
+/** @brief Initialize rwlock
+ *
+ *  @param rwlock The rwlock to initialize
+ *  @return 0 on success; -1 on error
+ */
 int rwlock_init( rwlock_t *rwlock ) { 
     rwlock->lock_state = 0;
     rwlock->writer_waiting_count = 0;
@@ -18,12 +29,20 @@ int rwlock_init( rwlock_t *rwlock ) {
     return is_error ? -1 : 0;
 }
 
+/** @brief Lock rwlock
+ *
+ *  @param rwlock The rwlock to acquire lock
+ *  @param type Type of lock to acquire (RWLOCK_READ or RWLOCK_WRITE)
+ *
+ *  @return void
+ */
 void rwlock_lock( rwlock_t *rwlock, int type ) {
     if (type == RWLOCK_READ) {
         mutex_lock(&rwlock->mutex_inner);
 
         if (rwlock->lock_state == -2) {
-            panic("readers/writers lock %p has already been destroied!", rwlock);
+            panic("readers/writers lock %p has already been destroyed!", 
+                    rwlock);
         }
 
         rwlock->reader_waiting_count++;
@@ -41,7 +60,8 @@ void rwlock_lock( rwlock_t *rwlock, int type ) {
         mutex_lock(&rwlock->mutex_inner);
 
         if (rwlock->lock_state == -2) {
-            panic("readers/writers lock %p has already been destroied!", rwlock);
+            panic("readers/writers lock %p has already been destroied!", 
+                    rwlock);
         }
 
         rwlock->writer_waiting_count++;
@@ -55,6 +75,15 @@ void rwlock_lock( rwlock_t *rwlock, int type ) {
     }
 }
 
+/** @brief Unlock rwlock
+ *
+ *  Whether the type of rwlock is a read lock or write lock, calling this
+ *  function marks the end of the locked state.
+ *  
+ *  @param rwlock The rwlock to release lock
+ *
+ *  @return void
+ */
 void rwlock_unlock( rwlock_t *rwlock ) {
     mutex_lock(&rwlock->mutex_inner);
 
@@ -63,17 +92,19 @@ void rwlock_unlock( rwlock_t *rwlock ) {
     }
 
     while (rwlock->lock_state == 0) {
-        lprintf("try to unlock an unlocked rwlock %p, will wait until it is locked", rwlock);
-        printf("try to unlock an unlocked rwlock %p, will wait until it is locked\n", rwlock);
+        lprintf("try to unlock an unlocked rwlock %p, "
+                "will wait until it is locked", rwlock);
+        printf("try to unlock an unlocked rwlock %p, "
+                "will wait until it is locked\n", rwlock);
         mutex_unlock(&rwlock->mutex_inner);
         yield(-1);
         mutex_lock(&rwlock->mutex_inner);
     }
-    
+
     rwlock->lock_state = (rwlock->lock_state>0) ? 
-                         (rwlock->lock_state-1) : 
-                         (rwlock->lock_state+1);
-        
+        (rwlock->lock_state-1) : 
+        (rwlock->lock_state+1);
+
     if (rwlock->lock_state == 0) {
         if (rwlock->writer_waiting_count > 0) 
             cond_signal(&rwlock->cond_writer);
@@ -84,16 +115,28 @@ void rwlock_unlock( rwlock_t *rwlock ) {
     mutex_unlock(&rwlock->mutex_inner);
 }
 
+/** @brief Destory rwlock
+ *
+ *  @param rwlock The rwlock to deactivate
+ *
+ *  @return void
+ */
 void rwlock_destroy( rwlock_t *rwlock ) {
     mutex_lock(&rwlock->mutex_inner);
-    
+
     if (rwlock->lock_state == -2) {
         panic("readers/writers lock %p has already been destroied!", rwlock);
     }
 
-    while (rwlock->lock_state != 0 || rwlock->reader_waiting_count != 0 || rwlock->writer_waiting_count != 0) {
-        lprintf("Destroy rwlock %p failed, rwlock is locked, will try again...", rwlock);
-        printf("Destroy rwlock %p failed, rwlock is locked, will try again...\n", rwlock);
+    // It's illegal to invoke this function while the lock is held or
+    // while other threads are waiting on it
+    while (rwlock->lock_state != 0 || 
+            rwlock->reader_waiting_count != 0 || 
+            rwlock->writer_waiting_count != 0) {
+        lprintf("Destroy rwlock %p failed, rwlock is locked, "
+                "will try again...", rwlock);
+        printf("Destroy rwlock %p failed, rwlock is locked, "
+                "will try again...\n", rwlock);
         mutex_unlock(&rwlock->mutex_inner);
         yield(-1);
         mutex_lock(&rwlock->mutex_inner);
@@ -108,10 +151,23 @@ void rwlock_destroy( rwlock_t *rwlock ) {
     cond_destroy(&rwlock->cond_writer);
 }
 
+/** @brief Downgrade rwlock
+ *
+ *  @param rwlock The rwlock to downgrade, must be locked in RWLOCK_WRITE mode
+ *  
+ *  When the function returns, no threads hold the lock in RWLOCK_WRITE mode;
+ *  the invoking thread, and possibly some other threads, hold the lock in
+ *  RWLOCK_READ mode; previously blocked or newly arriving writers must still 
+ *  wait for the lock to be released entirely.
+ *
+ *  @return void
+ */
 void rwlock_downgrade( rwlock_t *rwlock) {
     mutex_lock(&rwlock->mutex_inner);
     if (rwlock->lock_state != -1){
         // illegal
+        panic("readers/writers lock %p cannot be downgraded while not locked",
+                rwlock);
     }
     rwlock->lock_state = 1;
     cond_broadcast(&rwlock->cond_reader);
