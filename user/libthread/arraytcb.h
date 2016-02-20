@@ -29,6 +29,14 @@ typedef struct {
     cond_t cond_var;
 } tcb_t;
 
+/** @brief The node type of array->avail_list */
+typedef struct availnode_s {
+    /** @brief Pointer to next node */
+    struct availnode_s *next;
+    /** @brief Which stack 'slot' is available (not used by any thread) */
+    int index;
+} availnode_t;
+
 /** @brief The data structure of arraytcb */
 struct arraytcb_s {
     /** @brief The maximum capacity of arraytcb */
@@ -45,14 +53,6 @@ struct arraytcb_s {
      */
     availnode_t *avail_list;
 };
-
-/** @brief The node type of array->avail_list */
-typedef struct availnode_s {
-    /** @brief Pointer to next node */
-    struct availnode_s *next;
-    /** @brief Which stack 'slot' is available (not used by any thread) */
-    int index;
-} availnode_t;
 
 int arraytcb_init(int size);
 

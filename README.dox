@@ -6,7 +6,7 @@
 @author Ke Wu (kewu)
 
 1. Mutex: 
-Mutex is a low level constuct that serves the purpose of mutual exclusion.
+Mutex is a low level construct that serves the purpose of mutual exclusion.
 We have devised both a basic spinlock mutex and an advanced mutex that 
 approximates bounded waiting. 
 
@@ -59,10 +59,8 @@ blocks and signals threads when there's no resources left.
 
 4. Readers/writers locks: 
 
-What approach, how, why.
-Our implementation favors writer locks.
-
-The drawback of this approach may be that readers may be starved, though. 
+Our implementation favors writer locks. The drawback of this approach may be 
+that readers may be starved, though. 
 
 To achieve our goal, rwlock uses a variable lock_state to store the state of the
 rwlock (unlocked, shared, exclusive, destroied). It also records how many 
