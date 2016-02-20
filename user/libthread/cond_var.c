@@ -1,6 +1,12 @@
 /** @file cond_var.c
  *  @brief This file contains the implementation of condition varaible
  *
+ *  cond_t contains the following fields
+ *     1. mutex: a mutex to protect critical section of condition varaible code.
+ *     3. deque: a double-ended queue to store the threads that are blocking on
+ *        the condition varaible. The queue is FIFO so first blocked thread will
+ *        get be signaled first.
+ *
  *  @author Ke Wu (kewu)
  *
  *  @bug No known bugs.
@@ -68,6 +74,7 @@ void cond_destroy(cond_t *cv) {
  *  @return void
  */
 void cond_wait(cond_t *cv, mutex_t *mp) {
+    // first allocate node for queue
     node_t *tmp = malloc(sizeof(node_t));
     while (!tmp) {
         lprintf("malloc failed, will try again...");
@@ -90,7 +97,8 @@ void cond_wait(cond_t *cv, mutex_t *mp) {
     mutex_unlock(mp);
 
     mutex_unlock(&cv->mutex);
-    // The while loop is used to guard against inproper "wake ups"
+    // The while loop is used to guard against inproper "wake ups", reject is 
+    // used to indicate if the thread has been dequeued by others
     while(!tmp->reject) {
         if (deschedule(&tmp->reject) < 0) {
             panic("deschedule error of condition variable %p", cv);
@@ -118,6 +126,8 @@ void cond_signal(cond_t *cv) {
 
     node_t *tmp = dequeue(&cv->deque);
     if (tmp) {
+        // if some threads are waiting on the condition varaible, awaken the 
+        // thread in the head of the queue
         int tmp_ktid = tmp->ktid;
         tmp->reject = 1;
         make_runnable(tmp_ktid);
