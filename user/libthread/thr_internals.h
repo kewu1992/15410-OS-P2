@@ -73,7 +73,7 @@ int thr_exitstatus_hashfunc(void *key);
  *  However, it must be written in assembly because when stack region is
  *  deallocated, the program can not rely on stack to call new functions 
  *  (i.e. the following remove_pages(), SPINLOCK_UNLOCK() and vanish()). So 
- *  asm_thr_exit() will just use some registers to execute all code abve.    
+ *  asm_thr_exit() will just use some registers to execute all code above.    
  *
  *  @param inner_lock It is the addres of mutex_arraytcb->inner_lock. it is 
  *                 used to execute SPINLOCK_UNLOCK(&mutex_arraytcb->inner_lock);

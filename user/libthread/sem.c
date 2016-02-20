@@ -3,6 +3,11 @@
  *  @brief This file contains implementation of semaphore built
  *  on top of mutex and condition variables
  *  
+ *  The semaphore contains three fields: a mutux to guard access to changes to
+ *  its other fields, a condition variable to wait and signal threads according
+ *  to available resources, and a counter indicating the number of resources 
+ *  availbale.
+ *  
  *  @author Jian Wang (jianwan3)
  *  @author Ke Wu (kewu)
  *

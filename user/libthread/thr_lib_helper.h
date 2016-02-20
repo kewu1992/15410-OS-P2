@@ -1,3 +1,13 @@
+/** @file thr_lib_helper.h
+ *  @brief Declares types and functions used by thr_lib_helper.c which do 
+ *  stack space management.
+ *  
+ *  @author Jian Wang (jianwan3)
+ *  @author Ke Wu (kewu)
+ *
+ *  @bug None known.
+ */
+
 #ifndef _THR_LIB_HELPER_H_
 #define _THR_LIB_HELPER_H_
 
@@ -8,8 +18,8 @@
 #include <lib_public.h>
 
 /** @brief Index information of the array specifying page remove
-  * information for a thread's stack space.
-  */
+ * information for a thread's stack space.
+ */
 enum page_remove_info_index_enum {
     HIGHEST_PAGE_BASE,
     HIGHEST_PAGE_CAN_REMOVE,
